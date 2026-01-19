@@ -261,6 +261,7 @@
     padding: var(--spacing-lg);
     padding-top: calc(60px + var(--spacing-lg));
     min-height: 100vh;
+    overflow-x: hidden;
 }
 
 @media (min-width: 1024px) {

@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState } from 'react';
-import { collection, query, where, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Announcement } from '@/types';
 import styles from './page.module.css';
@@ -21,9 +21,22 @@ export default function BoardPage() {
 
     const fetchAnnouncements = async () => {
         try {
-            const announcementsQuery = query(collection(db, 'announcements'), where('isActive', '==', true), orderBy('createdAt', 'desc'));
+            // Simple query without composite index requirement
+            const announcementsQuery = query(collection(db, 'announcements'));
             const announcementsSnap = await getDocs(announcementsQuery);
-            setAnnouncements(announcementsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Announcement[]);
+            const allAnnouncements = announcementsSnap.docs
+                .map(doc => ({ id: doc.id, ...doc.data() })) as Announcement[];
+
+            // Filter and sort on client side
+            const filtered = allAnnouncements
+                .filter(a => a.isActive === true)
+                .sort((a, b) => {
+                    const dateA = (a.createdAt as any)?.toDate?.() || new Date(0);
+                    const dateB = (b.createdAt as any)?.toDate?.() || new Date(0);
+                    return dateB.getTime() - dateA.getTime();
+                });
+
+            setAnnouncements(filtered);
         } catch (error) { console.error('Error fetching announcements:', error); }
         finally { setLoading(false); }
     };

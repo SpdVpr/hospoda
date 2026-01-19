@@ -1,13 +1,14 @@
 .container {
     max-width: 1200px;
     margin: 0 auto;
+    overflow-x: hidden;
 }
 
 .header {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-md);
-    margin-bottom: var(--spacing-xl);
+    margin-bottom: var(--spacing-lg);
 }
 
 @media (min-width: 768px) {
@@ -15,18 +16,25 @@
         flex-direction: row;
         align-items: center;
         justify-content: space-between;
+        margin-bottom: var(--spacing-xl);
     }
 }
 
 .title {
-    font-size: 1.5rem;
+    font-size: 1.375rem;
     font-weight: 700;
     margin-bottom: var(--spacing-xs);
 }
 
+@media (min-width: 768px) {
+    .title {
+        font-size: 1.5rem;
+    }
+}
+
 .subtitle {
     color: var(--text-muted);
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
 }
 
 .headerActions {
@@ -38,6 +46,7 @@
 .selectionBtn {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: var(--spacing-sm);
     padding: var(--spacing-sm) var(--spacing-md);
     background: var(--bg-tertiary);
@@ -48,6 +57,13 @@
     font-weight: 500;
     cursor: pointer;
     transition: all var(--transition-fast);
+    flex: 1;
+}
+
+@media (min-width: 640px) {
+    .selectionBtn {
+        flex: none;
+    }
 }
 
 .selectionBtn:hover {
@@ -64,17 +80,26 @@
 .createBtn {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: var(--spacing-sm);
     padding: var(--spacing-sm) var(--spacing-lg);
     background: var(--gradient-primary);
     border: none;
     border-radius: var(--radius-md);
     color: var(--text-inverse);
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     font-weight: 600;
     cursor: pointer;
     transition: all var(--transition-fast);
     animation: pulse 2s infinite;
+    flex: 1;
+}
+
+@media (min-width: 640px) {
+    .createBtn {
+        flex: none;
+        font-size: 0.875rem;
+    }
 }
 
 .createBtn:hover {
@@ -157,24 +182,46 @@
 .legend {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--spacing-lg);
-    padding: var(--spacing-md) var(--spacing-lg);
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border-color);
+    justify-content: center;
+}
+
+@media (min-width: 768px) {
+    .legend {
+        gap: var(--spacing-lg);
+        padding: var(--spacing-md) var(--spacing-lg);
+        justify-content: flex-start;
+    }
 }
 
 .legendItem {
     display: flex;
     align-items: center;
     gap: var(--spacing-xs);
-    font-size: 0.8125rem;
+    font-size: 0.6875rem;
     color: var(--text-secondary);
 }
 
+@media (min-width: 768px) {
+    .legendItem {
+        font-size: 0.8125rem;
+    }
+}
+
 .legendBox {
-    width: 16px;
-    height: 16px;
+    width: 12px;
+    height: 12px;
     border-radius: var(--radius-sm);
+}
+
+@media (min-width: 768px) {
+    .legendBox {
+        width: 16px;
+        height: 16px;
+    }
 }
 
 .legendBox.openShift {
@@ -190,36 +237,62 @@
 }
 
 .calendar {
-    padding: var(--spacing-md);
+    padding: var(--spacing-xs);
+}
+
+@media (min-width: 768px) {
+    .calendar {
+        padding: var(--spacing-md);
+    }
 }
 
 .weekDays {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
-    margin-bottom: var(--spacing-sm);
+    gap: 2px;
+    margin-bottom: var(--spacing-xs);
+}
+
+@media (min-width: 768px) {
+    .weekDays {
+        gap: 4px;
+        margin-bottom: var(--spacing-sm);
+    }
 }
 
 .weekDay {
     text-align: center;
-    font-size: 0.75rem;
+    font-size: 0.625rem;
     font-weight: 600;
     color: var(--text-muted);
-    padding: var(--spacing-sm);
+    padding: var(--spacing-xs);
+}
+
+@media (min-width: 768px) {
+    .weekDay {
+        font-size: 0.75rem;
+        padding: var(--spacing-sm);
+    }
 }
 
 .days {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
+    gap: 2px;
+}
+
+@media (min-width: 768px) {
+    .days {
+        gap: 4px;
+    }
 }
 
 .day {
-    min-height: 100px;
-    padding: var(--spacing-xs);
+    min-height: 52px;
+    padding: 2px;
     background: var(--bg-secondary);
     border: 2px solid transparent;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-sm);
     cursor: pointer;
     transition: all var(--transition-fast);
     position: relative;
@@ -227,9 +300,11 @@
     flex-direction: column;
 }
 
-@media (max-width: 640px) {
+@media (min-width: 768px) {
     .day {
-        min-height: 70px;
+        min-height: 90px;
+        padding: var(--spacing-xs);
+        border-radius: var(--radius-md);
     }
 }
 
@@ -264,10 +339,17 @@
 }
 
 .dayNumber {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: var(--text-primary);
-    padding: 2px 6px;
+    padding: 2px 4px;
+}
+
+@media (min-width: 768px) {
+    .dayNumber {
+        font-size: 0.875rem;
+        padding: 2px 6px;
+    }
 }
 
 .day.today .dayNumber {
@@ -278,38 +360,68 @@
 
 .checkmark {
     position: absolute;
-    top: 4px;
-    right: 4px;
-    width: 20px;
-    height: 20px;
+    top: 2px;
+    right: 2px;
+    width: 16px;
+    height: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: var(--accent-primary);
     color: var(--text-inverse);
     border-radius: var(--radius-full);
-    font-size: 0.75rem;
+    font-size: 0.625rem;
     font-weight: bold;
+}
+
+@media (min-width: 768px) {
+    .checkmark {
+        top: 4px;
+        right: 4px;
+        width: 20px;
+        height: 20px;
+        font-size: 0.75rem;
+    }
 }
 
 .dayShifts {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    margin-top: var(--spacing-xs);
+    gap: 1px;
+    margin-top: 2px;
     overflow: hidden;
+    max-height: 32px;
+}
+
+@media (min-width: 768px) {
+    .dayShifts {
+        gap: 2px;
+        margin-top: var(--spacing-xs);
+        max-height: none;
+    }
 }
 
 .shiftBlock {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 2px 6px;
-    border-radius: var(--radius-sm);
-    font-size: 0.6875rem;
-    font-weight: 500;
+    justify-content: center;
+    padding: 1px 2px;
+    border-radius: 2px;
+    font-size: 0.5rem;
+    font-weight: 600;
     transition: all var(--transition-fast);
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+@media (min-width: 768px) {
+    .shiftBlock {
+        justify-content: space-between;
+        padding: 2px 6px;
+        border-radius: var(--radius-sm);
+        font-size: 0.6875rem;
+    }
 }
 
 .shiftBlock.shiftOpen {
@@ -332,8 +444,15 @@
 }
 
 .shiftPos {
+    display: none;
     opacity: 0.9;
     font-size: 0.625rem;
+}
+
+@media (min-width: 768px) {
+    .shiftPos {
+        display: inline;
+    }
 }
 
 .moreShifts {
@@ -420,20 +539,34 @@
 }
 
 .shiftsList {
-    padding: var(--spacing-xl);
+    padding: var(--spacing-md);
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-lg);
+    gap: var(--spacing-md);
+}
+
+@media (min-width: 768px) {
+    .shiftsList {
+        padding: var(--spacing-xl);
+        gap: var(--spacing-lg);
+    }
 }
 
 .shiftCard {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-md);
-    padding: var(--spacing-lg);
+    padding: var(--spacing-md);
     border-radius: var(--radius-lg);
-    border-left: 5px solid;
+    border-left: 4px solid;
     background: var(--bg-secondary);
+}
+
+@media (min-width: 768px) {
+    .shiftCard {
+        padding: var(--spacing-lg);
+        border-left: 5px solid;
+    }
 }
 
 .shiftCard.open {
@@ -515,15 +648,23 @@
 }
 
 .takeBtn {
-    padding: var(--spacing-sm) var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-lg);
     background: var(--accent-success);
     border: none;
     border-radius: var(--radius-md);
     color: white;
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     font-weight: 600;
     cursor: pointer;
     transition: all var(--transition-fast);
+    flex: 1;
+}
+
+@media (min-width: 640px) {
+    .takeBtn {
+        flex: none;
+        font-size: 0.875rem;
+    }
 }
 
 .takeBtn:hover {
@@ -532,15 +673,23 @@
 }
 
 .releaseBtn {
-    padding: var(--spacing-sm) var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-lg);
     background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     color: var(--text-secondary);
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     font-weight: 500;
     cursor: pointer;
     transition: all var(--transition-fast);
+    flex: 1;
+}
+
+@media (min-width: 640px) {
+    .releaseBtn {
+        flex: none;
+        font-size: 0.875rem;
+    }
 }
 
 .releaseBtn:hover {
@@ -548,20 +697,22 @@
 }
 
 .deleteBtn {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--bg-tertiary);
-    border: none;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
     border-radius: var(--radius-md);
+    color: #ef4444;
     cursor: pointer;
     transition: all var(--transition-fast);
 }
 
 .deleteBtn:hover {
-    background: rgba(239, 68, 68, 0.15);
+    background: rgba(239, 68, 68, 0.25);
+    border-color: #ef4444;
 }
 
 .addMoreBtn {
@@ -983,25 +1134,25 @@
 
 /* Shift Detail Tasks */
 .shiftTasksSection {
-    margin-top: var(--spacing-lg);
-    padding: var(--spacing-md);
-    background: var(--bg-tertiary);
-    border-radius: var(--radius-md);
+    margin-top: var(--spacing-md);
+    padding: 0;
+    background: transparent;
 }
 
 .shiftTasksTitle {
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     font-weight: 600;
     color: var(--accent-success);
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+    padding-left: 0;
 }
 
 .shiftTaskItem {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-sm) var(--spacing-md);
-    background: var(--bg-card);
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--bg-tertiary);
     border-radius: var(--radius-md);
     margin-bottom: var(--spacing-sm);
 }
@@ -1011,13 +1162,15 @@
 }
 
 .taskPriorityIcon {
-    font-size: 0.875rem;
+    font-size: 1rem;
+    flex-shrink: 0;
 }
 
 .shiftTaskTitle {
     flex: 1;
-    font-size: 0.9375rem;
+    font-size: 1rem;
     color: var(--text-primary);
+    line-height: 1.4;
 }
 
 .shiftTaskTitle.completed {
@@ -1046,15 +1199,23 @@
 }
 
 .addTaskBtn {
-    padding: var(--spacing-sm) var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-lg);
     background: var(--accent-info);
     border: none;
     border-radius: var(--radius-md);
     color: white;
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     font-weight: 600;
     cursor: pointer;
     transition: all var(--transition-fast);
+    flex: 1;
+}
+
+@media (min-width: 640px) {
+    .addTaskBtn {
+        flex: none;
+        font-size: 0.875rem;
+    }
 }
 
 .addTaskBtn:hover {
@@ -1074,7 +1235,8 @@
 
 .addTaskForm input {
     flex: 1;
-    min-width: 200px;
+    min-width: 0;
+    max-width: 100%;
     padding: var(--spacing-sm) var(--spacing-md);
     background: var(--bg-card);
     border: 1px solid var(--border-color);

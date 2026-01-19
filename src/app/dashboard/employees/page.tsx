@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState } from 'react';
-import { collection, query, orderBy, getDocs, updateDoc, doc } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { UserProfile, UserRole } from '@/types';
 import { useRouter } from 'next/navigation';
@@ -16,6 +16,7 @@ export default function EmployeesPage() {
     const [selectedEmployee, setSelectedEmployee] = useState<UserProfile | null>(null);
     const [editData, setEditData] = useState({ role: 'employee' as UserRole, position: '', hourlyRate: 0, adminNotes: '', isActive: true });
     const [saving, setSaving] = useState(false);
+    const [deleting, setDeleting] = useState(false);
 
     useEffect(() => { if (!isAdmin && !loading) { router.push('/dashboard'); } }, [isAdmin, loading, router]);
 
@@ -43,6 +44,17 @@ export default function EmployeesPage() {
             fetchEmployees(); setSelectedEmployee(null);
         } catch (error) { console.error('Error updating employee:', error); }
         finally { setSaving(false); }
+    };
+
+    const handleDeleteEmployee = async () => {
+        if (!selectedEmployee || selectedEmployee.uid === userProfile?.uid) return;
+        if (!confirm(`Opravdu chcete smazat zaměstnance ${selectedEmployee.displayName}? Tato akce je nevratná!`)) return;
+        setDeleting(true);
+        try {
+            await deleteDoc(doc(db, 'users', selectedEmployee.uid));
+            fetchEmployees(); setSelectedEmployee(null);
+        } catch (error) { console.error('Error deleting employee:', error); }
+        finally { setDeleting(false); }
     };
 
     const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -99,7 +111,15 @@ export default function EmployeesPage() {
                             <div className={styles.formGroup}><label htmlFor="hourlyRate">Hodinová mzda (Kč)</label><input type="number" id="hourlyRate" value={editData.hourlyRate} onChange={(e) => setEditData({ ...editData, hourlyRate: Number(e.target.value) })} min="0" step="10" /></div>
                             <div className={styles.formGroup}><label htmlFor="adminNotes">Poznámky (pouze pro admina)</label><textarea id="adminNotes" value={editData.adminNotes} onChange={(e) => setEditData({ ...editData, adminNotes: e.target.value })} placeholder="Interní poznámky..." rows={3} /></div>
                             <div className={styles.formGroup}><label className={styles.checkboxLabel}><input type="checkbox" checked={editData.isActive} onChange={(e) => setEditData({ ...editData, isActive: e.target.checked })} disabled={selectedEmployee.uid === userProfile?.uid} /><span>Aktivní zaměstnanec</span></label></div>
-                            <div className={styles.formActions}><button type="button" className={styles.cancelBtn} onClick={() => setSelectedEmployee(null)}>Zrušit</button><button type="submit" className={styles.saveBtn} disabled={saving}>{saving ? 'Ukládám...' : 'Uložit změny'}</button></div>
+                            <div className={styles.formActions}>
+                                {selectedEmployee.uid !== userProfile?.uid && (
+                                    <button type="button" className={styles.deleteBtn} onClick={handleDeleteEmployee} disabled={deleting}>
+                                        {deleting ? 'Mažu...' : '🗑️ Smazat'}
+                                    </button>
+                                )}
+                                <button type="button" className={styles.cancelBtn} onClick={() => setSelectedEmployee(null)}>Zrušit</button>
+                                <button type="submit" className={styles.saveBtn} disabled={saving}>{saving ? 'Ukládám...' : 'Uložit změny'}</button>
+                            </div>
                         </form>
                     </div>
                 )}

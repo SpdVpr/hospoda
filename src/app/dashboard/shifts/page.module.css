@@ -1,13 +1,14 @@
 .container {
     max-width: 900px;
     margin: 0 auto;
+    overflow-x: hidden;
 }
 
 .header {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-md);
-    margin-bottom: var(--spacing-xl);
+    margin-bottom: var(--spacing-lg);
 }
 
 @media (min-width: 768px) {
@@ -15,33 +16,50 @@
         flex-direction: row;
         align-items: center;
         justify-content: space-between;
+        margin-bottom: var(--spacing-xl);
     }
 }
 
 .title {
-    font-size: 1.5rem;
+    font-size: 1.375rem;
     font-weight: 700;
     margin-bottom: var(--spacing-xs);
 }
 
+@media (min-width: 768px) {
+    .title {
+        font-size: 1.5rem;
+    }
+}
+
 .subtitle {
     color: var(--text-muted);
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
 }
 
 .createBtn {
-    display: inline-flex;
+    display: flex;
     align-items: center;
+    justify-content: center;
     gap: var(--spacing-sm);
-    padding: var(--spacing-sm) var(--spacing-lg);
+    padding: var(--spacing-md) var(--spacing-lg);
     background: var(--gradient-primary);
     color: var(--text-inverse);
     border: none;
     border-radius: var(--radius-md);
     font-weight: 600;
-    font-size: 0.875rem;
+    font-size: 1rem;
     cursor: pointer;
     transition: all var(--transition-fast);
+    width: 100%;
+}
+
+@media (min-width: 768px) {
+    .createBtn {
+        width: auto;
+        padding: var(--spacing-sm) var(--spacing-lg);
+        font-size: 0.875rem;
+    }
 }
 
 .createBtn:hover {
@@ -49,27 +67,44 @@
     box-shadow: var(--shadow-lg), var(--shadow-glow);
 }
 
+/* Filters - Mobile optimized */
 .filters {
     display: flex;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-lg);
+    gap: var(--spacing-xs);
+    margin-bottom: var(--spacing-md);
     padding: var(--spacing-xs);
     background: var(--bg-secondary);
     border-radius: var(--radius-lg);
     border: 1px solid var(--border-color);
+    overflow-x: auto;
+}
+
+@media (min-width: 768px) {
+    .filters {
+        gap: var(--spacing-sm);
+        margin-bottom: var(--spacing-lg);
+    }
 }
 
 .filterBtn {
     flex: 1;
+    min-width: max-content;
     padding: var(--spacing-sm) var(--spacing-md);
     background: transparent;
     border: none;
     border-radius: var(--radius-md);
     color: var(--text-muted);
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     font-weight: 500;
     cursor: pointer;
     transition: all var(--transition-fast);
+    white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+    .filterBtn {
+        font-size: 0.875rem;
+    }
 }
 
 .filterBtn:hover {
@@ -85,7 +120,15 @@
 .shiftsList {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-md);
+    gap: var(--spacing-sm);
+}
+
+@media (min-width: 768px) {
+
+    .loading,
+    .shiftsList {
+        gap: var(--spacing-md);
+    }
 }
 
 .skeleton {
@@ -110,29 +153,48 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: var(--spacing-2xl);
+    padding: var(--spacing-xl);
     text-align: center;
 }
 
+@media (min-width: 768px) {
+    .empty {
+        padding: var(--spacing-2xl);
+    }
+}
+
 .emptyIcon {
-    font-size: 4rem;
+    font-size: 3rem;
     margin-bottom: var(--spacing-md);
     opacity: 0.5;
 }
 
+@media (min-width: 768px) {
+    .emptyIcon {
+        font-size: 4rem;
+    }
+}
+
 .emptyText {
     color: var(--text-muted);
-    font-size: 1rem;
+    font-size: 0.9375rem;
     margin-bottom: var(--spacing-lg);
 }
 
+@media (min-width: 768px) {
+    .emptyText {
+        font-size: 1rem;
+    }
+}
+
 .emptyBtn {
-    padding: var(--spacing-sm) var(--spacing-lg);
+    padding: var(--spacing-md) var(--spacing-xl);
     background: var(--gradient-primary);
     color: var(--text-inverse);
     border: none;
     border-radius: var(--radius-md);
     font-weight: 600;
+    font-size: 1rem;
     cursor: pointer;
     transition: all var(--transition-fast);
 }
@@ -142,15 +204,24 @@
     box-shadow: var(--shadow-lg), var(--shadow-glow);
 }
 
+/* Shift Card - Mobile optimized */
 .shiftCard {
     display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: var(--spacing-md);
-    padding: var(--spacing-md) var(--spacing-lg);
+    padding: var(--spacing-md);
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
     transition: all var(--transition-fast);
+}
+
+@media (min-width: 640px) {
+    .shiftCard {
+        flex-direction: row;
+        align-items: center;
+        padding: var(--spacing-md) var(--spacing-lg);
+    }
 }
 
 .shiftCard:hover {
@@ -162,7 +233,13 @@
 }
 
 .shiftCard.open {
-    border-left: 3px solid var(--accent-success);
+    border-left: 4px solid var(--accent-success);
+}
+
+.shiftTop {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
 }
 
 .shiftDate {
@@ -172,20 +249,32 @@
     padding: var(--spacing-sm) var(--spacing-md);
     background: var(--bg-tertiary);
     border-radius: var(--radius-md);
-    min-width: 60px;
+    min-width: 56px;
 }
 
 .dateDay {
-    font-size: 1.5rem;
+    font-size: 1.375rem;
     font-weight: 700;
     color: var(--text-primary);
     line-height: 1;
 }
 
+@media (min-width: 768px) {
+    .dateDay {
+        font-size: 1.5rem;
+    }
+}
+
 .dateMonth {
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     color: var(--text-muted);
     text-transform: uppercase;
+}
+
+@media (min-width: 768px) {
+    .dateMonth {
+        font-size: 0.75rem;
+    }
 }
 
 .shiftInfo {
@@ -200,14 +289,29 @@
 }
 
 .shiftPosition {
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     color: var(--text-secondary);
 }
 
+@media (min-width: 768px) {
+    .shiftPosition {
+        font-size: 0.875rem;
+    }
+}
+
 .shiftAssignee {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    margin-top: var(--spacing-xs);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: var(--spacing-sm);
+    padding: 6px 12px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    border-radius: var(--radius-full);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
 }
 
 .shiftStatus {
@@ -215,45 +319,74 @@
 }
 
 .statusOpen {
-    padding: 2px 8px;
+    padding: 4px 12px;
     background: rgba(34, 197, 94, 0.15);
     color: var(--accent-success);
     border-radius: var(--radius-full);
     font-size: 0.75rem;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .statusAssigned {
-    padding: 2px 8px;
+    padding: 4px 12px;
     background: var(--accent-primary-muted);
     color: var(--accent-primary);
     border-radius: var(--radius-full);
     font-size: 0.75rem;
-    font-weight: 500;
+    font-weight: 600;
 }
 
+/* Shift Actions - Mobile optimized */
 .shiftActions {
     display: flex;
-    gap: var(--spacing-xs);
+    gap: var(--spacing-sm);
     flex-shrink: 0;
+    padding-top: var(--spacing-sm);
+    border-top: 1px solid var(--border-color);
+}
+
+@media (min-width: 640px) {
+    .shiftActions {
+        padding-top: 0;
+        border-top: none;
+        gap: var(--spacing-xs);
+    }
 }
 
 .takeBtn,
 .releaseBtn,
 .editBtn,
 .deleteBtn {
-    padding: var(--spacing-xs) var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
     border: none;
     border-radius: var(--radius-md);
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
     transition: all var(--transition-fast);
 }
 
+@media (min-width: 640px) {
+
+    .takeBtn,
+    .releaseBtn,
+    .editBtn,
+    .deleteBtn {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-size: 0.75rem;
+    }
+}
+
 .takeBtn {
+    flex: 1;
     background: var(--accent-success);
     color: white;
+}
+
+@media (min-width: 640px) {
+    .takeBtn {
+        flex: none;
+    }
 }
 
 .takeBtn:hover {
@@ -261,8 +394,15 @@
 }
 
 .releaseBtn {
+    flex: 1;
     background: var(--bg-tertiary);
     color: var(--text-secondary);
+}
+
+@media (min-width: 640px) {
+    .releaseBtn {
+        flex: none;
+    }
 }
 
 .releaseBtn:hover {
@@ -271,13 +411,24 @@
 
 .editBtn,
 .deleteBtn {
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: var(--bg-tertiary);
-    font-size: 0.875rem;
+    font-size: 1rem;
+    padding: 0;
+}
+
+@media (min-width: 640px) {
+
+    .editBtn,
+    .deleteBtn {
+        width: 32px;
+        height: 32px;
+        font-size: 0.875rem;
+    }
 }
 
 .editBtn:hover {
@@ -288,6 +439,7 @@
     background: rgba(239, 68, 68, 0.15);
 }
 
+/* Modal */
 .modalOverlay {
     position: fixed;
     inset: 0;
@@ -296,9 +448,15 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: var(--spacing-lg);
+    padding: var(--spacing-md);
     z-index: var(--z-modal);
     animation: fadeIn 0.2s ease;
+}
+
+@media (min-width: 768px) {
+    .modalOverlay {
+        padding: var(--spacing-lg);
+    }
 }
 
 @keyframes fadeIn {
@@ -313,6 +471,8 @@
     border-radius: var(--radius-xl);
     width: 100%;
     max-width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
     animation: scaleIn 0.2s ease;
 }
 
@@ -327,18 +487,30 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--spacing-lg);
+    padding: var(--spacing-md);
     border-bottom: 1px solid var(--border-color);
 }
 
+@media (min-width: 768px) {
+    .modalHeader {
+        padding: var(--spacing-lg);
+    }
+}
+
 .modalHeader h2 {
-    font-size: 1.125rem;
+    font-size: 1rem;
     font-weight: 600;
 }
 
+@media (min-width: 768px) {
+    .modalHeader h2 {
+        font-size: 1.125rem;
+    }
+}
+
 .closeBtn {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -356,7 +528,13 @@
 }
 
 .form {
-    padding: var(--spacing-lg);
+    padding: var(--spacing-md);
+}
+
+@media (min-width: 768px) {
+    .form {
+        padding: var(--spacing-lg);
+    }
 }
 
 .formGroup {
@@ -401,16 +579,29 @@
 .formRow {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: var(--spacing-md);
+    gap: var(--spacing-sm);
+}
+
+@media (min-width: 768px) {
+    .formRow {
+        gap: var(--spacing-md);
+    }
 }
 
 .modalFooter {
     display: flex;
-    justify-content: flex-end;
+    flex-direction: column;
     gap: var(--spacing-sm);
     padding-top: var(--spacing-md);
     border-top: 1px solid var(--border-color);
     margin-top: var(--spacing-md);
+}
+
+@media (min-width: 640px) {
+    .modalFooter {
+        flex-direction: row;
+        justify-content: flex-end;
+    }
 }
 
 .cancelBtn {
@@ -419,10 +610,18 @@
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     color: var(--text-secondary);
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     font-weight: 500;
     cursor: pointer;
     transition: all var(--transition-fast);
+    order: 2;
+}
+
+@media (min-width: 640px) {
+    .cancelBtn {
+        font-size: 0.875rem;
+        order: 1;
+    }
 }
 
 .cancelBtn:hover {
@@ -436,10 +635,18 @@
     border: none;
     border-radius: var(--radius-md);
     color: var(--text-inverse);
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     font-weight: 600;
     cursor: pointer;
     transition: all var(--transition-fast);
+    order: 1;
+}
+
+@media (min-width: 640px) {
+    .submitBtn {
+        font-size: 0.875rem;
+        order: 2;
+    }
 }
 
 .submitBtn:hover:not(:disabled) {

@@ -61,11 +61,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
 
             // Create new profile for first-time users
-            const usersSnap = await getDoc(doc(db, 'meta', 'stats'));
-            const isFirstUser = !usersSnap.exists() || (usersSnap.data()?.userCount || 0) === 0;
-
-            // Determine role: admin@hospoda.local is ALWAYS admin, first user is admin, others are employees
-            const userRole = isAdminUser || isFirstUser ? 'admin' : 'employee';
+            // Only admin@hospoda.local gets admin role, everyone else is employee
+            const userRole = isAdminUser ? 'admin' : 'employee';
 
             const newProfile: Omit<UserProfile, 'createdAt' | 'updatedAt'> = {
                 uid: firebaseUser.uid,
@@ -81,11 +78,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             });
-
-            // Update user count
-            await setDoc(doc(db, 'meta', 'stats'), {
-                userCount: (usersSnap.data()?.userCount || 0) + 1,
-            }, { merge: true });
 
             return { ...newProfile, createdAt: new Date(), updatedAt: new Date() } as UserProfile;
         } catch (err) {

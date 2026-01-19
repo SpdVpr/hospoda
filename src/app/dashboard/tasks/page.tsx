@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState } from 'react';
-import { collection, query, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Task, TaskPriority, TaskStatus } from '@/types';
 import styles from './page.module.css';
@@ -21,12 +21,44 @@ export default function TasksPage() {
     const [submitting, setSubmitting] = useState(false);
 
     const fetchTasks = async () => {
+        if (!userProfile) return;
+
         try {
-            const tasksQuery = query(collection(db, 'tasks'), orderBy('createdAt', 'desc'));
+            // Fetch all tasks
+            const tasksQuery = query(collection(db, 'tasks'));
             const tasksSnap = await getDocs(tasksQuery);
-            const tasksData = tasksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Task[];
-            const filteredTasks = isAdmin ? tasksData : tasksData.filter(t => t.assignedTo === userProfile?.uid || !t.assignedTo);
-            setTasks(filteredTasks);
+            const allTasks = tasksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Task[];
+
+            if (isAdmin) {
+                // Admin sees all tasks, sorted by date
+                const sorted = allTasks.sort((a, b) => {
+                    const dateA = (a.createdAt as any)?.toDate?.() || new Date(0);
+                    const dateB = (b.createdAt as any)?.toDate?.() || new Date(0);
+                    return dateB.getTime() - dateA.getTime();
+                });
+                setTasks(sorted);
+            } else {
+                // Employee: fetch their assigned shifts first
+                const shiftsQuery = query(collection(db, 'shifts'));
+                const shiftsSnap = await getDocs(shiftsQuery);
+                const myShiftIds = shiftsSnap.docs
+                    .filter(doc => doc.data().assignedTo === userProfile.uid)
+                    .map(doc => doc.id);
+
+                // Filter tasks to only those from user's shifts
+                const myTasks = allTasks.filter(task =>
+                    task.shiftId && myShiftIds.includes(task.shiftId)
+                );
+
+                // Sort by date
+                const sorted = myTasks.sort((a, b) => {
+                    const dateA = (a.createdAt as any)?.toDate?.() || new Date(0);
+                    const dateB = (b.createdAt as any)?.toDate?.() || new Date(0);
+                    return dateB.getTime() - dateA.getTime();
+                });
+
+                setTasks(sorted);
+            }
         } catch (error) { console.error('Error fetching tasks:', error); }
         finally { setLoading(false); }
     };
