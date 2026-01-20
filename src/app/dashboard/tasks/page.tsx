@@ -112,7 +112,7 @@ export default function TasksPage() {
         <div className={styles.container}>
             <div className={styles.header}>
                 <div>
-                    <h1 className={styles.title}>✅ Úkoly</h1>
+                    <h1 className={styles.title}>Úkoly</h1>
                     <p className={styles.subtitle}>{isAdmin ? 'Spravujte úkoly pro zaměstnance' : 'Vaše přiřazené úkoly'}</p>
                 </div>
                 {isAdmin && (<button className={styles.createBtn} onClick={() => handleOpenModal()}><span>+</span><span>Nový úkol</span></button>)}

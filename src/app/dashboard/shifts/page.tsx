@@ -17,9 +17,9 @@ interface ShiftFormData {
 
 const initialFormData: ShiftFormData = {
     date: new Date().toISOString().split('T')[0],
-    startTime: '09:00',
-    endTime: '17:00',
-    position: 'Číšník',
+    startTime: '16:00',
+    endTime: '21:00',
+    position: 'Číšník / Servírka',
     notes: '',
 };
 
@@ -123,7 +123,7 @@ export default function ShiftsPage() {
         <div className={styles.container}>
             <div className={styles.header}>
                 <div>
-                    <h1 className={styles.title}>📅 Směny</h1>
+                    <h1 className={styles.title}>Směny</h1>
                     <p className={styles.subtitle}>{isAdmin ? 'Spravujte směny zaměstnanců' : 'Přehled a přihlašování na směny'}</p>
                 </div>
                 {isAdmin && (
@@ -143,7 +143,6 @@ export default function ShiftsPage() {
                 <div className={styles.loading}>{[...Array(3)].map((_, i) => <div key={i} className={styles.skeleton}></div>)}</div>
             ) : filteredShifts.length === 0 ? (
                 <div className={styles.empty}>
-                    <span className={styles.emptyIcon}>📅</span>
                     <p className={styles.emptyText}>Žádné směny</p>
                     {isAdmin && <button className={styles.emptyBtn} onClick={() => handleOpenModal()}>Vytvořit první směnu</button>}
                 </div>
@@ -158,7 +157,7 @@ export default function ShiftsPage() {
                             <div className={styles.shiftInfo}>
                                 <div className={styles.shiftTime}>{shift.startTime} - {shift.endTime}</div>
                                 <div className={styles.shiftPosition}>{shift.position}</div>
-                                {shift.assignedToName && <div className={styles.shiftAssignee}>👤 {shift.assignedToName}</div>}
+                                {shift.assignedToName && <div className={styles.shiftAssignee}>{shift.assignedToName}</div>}
                             </div>
                             <div className={styles.shiftStatus}>
                                 {shift.status === 'open' && <span className={styles.statusOpen}>Volná</span>}
@@ -168,7 +167,7 @@ export default function ShiftsPage() {
                                 {shift.status === 'open' && !isPast(shift.date) && (
                                     <button className={styles.takeBtn} onClick={() => handleTakeShift(shift)}>Vzít</button>
                                 )}
-                                {shift.assignedTo === userProfile?.uid && !isPast(shift.date) && (
+                                {isAdmin && shift.status === 'assigned' && !isPast(shift.date) && (
                                     <button className={styles.releaseBtn} onClick={() => handleReleaseShift(shift)}>Uvolnit</button>
                                 )}
                                 {isAdmin && (
@@ -208,10 +207,9 @@ export default function ShiftsPage() {
                             <div className={styles.formGroup}>
                                 <label htmlFor="position">Pozice</label>
                                 <select id="position" value={formData.position} onChange={(e) => setFormData({ ...formData, position: e.target.value })}>
-                                    <option>Číšník</option>
-                                    <option>Barman</option>
+                                    <option>Barman / Barmanka</option>
+                                    <option>Číšník / Servírka</option>
                                     <option>Kuchař</option>
-                                    <option>Pomocná síla</option>
                                 </select>
                             </div>
                             <div className={styles.formGroup}>

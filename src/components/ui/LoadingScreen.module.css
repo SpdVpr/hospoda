@@ -20,7 +20,8 @@
 }
 
 .logoIcon {
-    font-size: 3rem;
+    height: 48px;
+    width: auto;
     animation: bounce 1s ease infinite;
 }
 

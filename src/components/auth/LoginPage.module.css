@@ -22,6 +22,16 @@
     border-radius: 50%;
     filter: blur(80px);
     opacity: 0.4;
+    display: none;
+}
+
+@media (min-width: 768px) {
+
+    .bgCircle1,
+    .bgCircle2,
+    .bgCircle3 {
+        display: block;
+    }
 }
 
 .bgCircle1 {
@@ -108,6 +118,12 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+}
+
+.logoMain {
+    height: 100px;
+    width: auto;
+    object-fit: contain;
 }
 
 .title {

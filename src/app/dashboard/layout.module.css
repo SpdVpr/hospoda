@@ -51,6 +51,12 @@
     font-size: 1.5rem;
 }
 
+.mobileLogoImg {
+    height: 28px;
+    width: auto;
+    object-fit: contain;
+}
+
 .mobileAvatar {
     width: 36px;
     height: 36px;
@@ -121,6 +127,12 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+}
+
+.logoImg {
+    height: 60px;
+    width: auto;
+    object-fit: contain;
 }
 
 .nav {
@@ -262,6 +274,7 @@
     padding-top: calc(60px + var(--spacing-lg));
     min-height: 100vh;
     overflow-x: hidden;
+    background: var(--bg-secondary);
 }
 
 @media (min-width: 1024px) {

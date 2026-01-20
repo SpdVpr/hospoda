@@ -65,7 +65,7 @@ export default function DashboardPage() {
             <div className={styles.header}>
                 <div>
                     <h1 className={styles.greeting}>
-                        {getGreeting()}, {userProfile?.displayName?.split(' ')[0] || 'uživateli'}! 👋
+                        {getGreeting()}, {userProfile?.displayName?.split(' ')[0] || 'uživateli'}!
                     </h1>
                     <p className={styles.subtitle}>
                         {new Date().toLocaleDateString('cs-CZ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
@@ -81,21 +81,18 @@ export default function DashboardPage() {
 
             <div className={styles.statsGrid}>
                 <div className={styles.statCard}>
-                    <div className={styles.statIcon}>📅</div>
                     <div className={styles.statContent}>
                         <span className={styles.statValue}>{upcomingShifts.length}</span>
                         <span className={styles.statLabel}>Nadcházejících směn</span>
                     </div>
                 </div>
                 <div className={styles.statCard}>
-                    <div className={styles.statIcon}>✅</div>
                     <div className={styles.statContent}>
                         <span className={styles.statValue}>{myTasks.length}</span>
                         <span className={styles.statLabel}>Aktivních úkolů</span>
                     </div>
                 </div>
                 <div className={styles.statCard}>
-                    <div className={styles.statIcon}>📋</div>
                     <div className={styles.statContent}>
                         <span className={styles.statValue}>{announcements.length}</span>
                         <span className={styles.statLabel}>Oznámení</span>
@@ -103,7 +100,6 @@ export default function DashboardPage() {
                 </div>
                 {isAdmin && (
                     <div className={styles.statCard}>
-                        <div className={styles.statIcon}>👑</div>
                         <div className={styles.statContent}>
                             <span className={styles.statValue}>Admin</span>
                             <span className={styles.statLabel}>Vaše role</span>
@@ -115,14 +111,14 @@ export default function DashboardPage() {
             <div className={styles.contentGrid}>
                 <div className={styles.card}>
                     <div className={styles.cardHeader}>
-                        <h2 className={styles.cardTitle}><span>📅</span> Nadcházející směny</h2>
+                        <h2 className={styles.cardTitle}>Nadcházející směny</h2>
                         <Link href="/dashboard/shifts" className={styles.cardLink}>Zobrazit vše →</Link>
                     </div>
                     <div className={styles.cardContent}>
                         {loading ? (
                             <div className={styles.loading}><div className={styles.skeleton}></div><div className={styles.skeleton}></div></div>
                         ) : upcomingShifts.length === 0 ? (
-                            <div className={styles.empty}><span>📅</span><p>Žádné nadcházející směny</p></div>
+                            <div className={styles.empty}><p>Žádné nadcházející směny</p></div>
                         ) : (
                             <div className={styles.list}>
                                 {upcomingShifts.map((shift) => (
@@ -138,14 +134,14 @@ export default function DashboardPage() {
 
                 <div className={styles.card}>
                     <div className={styles.cardHeader}>
-                        <h2 className={styles.cardTitle}><span>✅</span> Úkoly</h2>
+                        <h2 className={styles.cardTitle}>Úkoly</h2>
                         <Link href="/dashboard/tasks" className={styles.cardLink}>Zobrazit vše →</Link>
                     </div>
                     <div className={styles.cardContent}>
                         {loading ? (
                             <div className={styles.loading}><div className={styles.skeleton}></div><div className={styles.skeleton}></div></div>
                         ) : myTasks.length === 0 ? (
-                            <div className={styles.empty}><span>✅</span><p>Žádné aktivní úkoly</p></div>
+                            <div className={styles.empty}><p>Žádné aktivní úkoly</p></div>
                         ) : (
                             <div className={styles.list}>
                                 {myTasks.map((task) => (
@@ -160,14 +156,14 @@ export default function DashboardPage() {
 
                 <div className={`${styles.card} ${styles.cardFull}`}>
                     <div className={styles.cardHeader}>
-                        <h2 className={styles.cardTitle}><span>📋</span> Nástěnka</h2>
+                        <h2 className={styles.cardTitle}>Nástěnka</h2>
                         <Link href="/dashboard/board" className={styles.cardLink}>Zobrazit vše →</Link>
                     </div>
                     <div className={styles.cardContent}>
                         {loading ? (
                             <div className={styles.loading}><div className={styles.skeleton}></div></div>
                         ) : announcements.length === 0 ? (
-                            <div className={styles.empty}><span>📋</span><p>Žádná oznámení</p></div>
+                            <div className={styles.empty}><p>Žádná oznámení</p></div>
                         ) : (
                             <div className={styles.announcements}>
                                 {announcements.map((a) => (

@@ -87,12 +87,12 @@ export default function BoardPage() {
     return (
         <div className={styles.container}>
             <div className={styles.header}>
-                <div><h1 className={styles.title}>📋 Nástěnka</h1><p className={styles.subtitle}>Oznámení a důležité informace</p></div>
+                <div><h1 className={styles.title}>Nástěnka</h1><p className={styles.subtitle}>Oznámení a důležité informace</p></div>
                 {isAdmin && (<button className={styles.createBtn} onClick={() => handleOpenModal()}><span>+</span><span>Nové oznámení</span></button>)}
             </div>
 
             {loading ? (<div className={styles.loading}>{[...Array(3)].map((_, i) => <div key={i} className={styles.skeleton}></div>)}</div>
-            ) : announcements.length === 0 ? (<div className={styles.empty}><span className={styles.emptyIcon}>📋</span><p className={styles.emptyText}>Zatím žádná oznámení</p>{isAdmin && <button className={styles.emptyBtn} onClick={() => handleOpenModal()}>Přidat první oznámení</button>}</div>
+            ) : announcements.length === 0 ? (<div className={styles.empty}><p className={styles.emptyText}>Zatím žádná oznámení</p>{isAdmin && <button className={styles.emptyBtn} onClick={() => handleOpenModal()}>Přidat první oznámení</button>}</div>
             ) : (
                 <div className={styles.announcementsList}>
                     {announcements.map((announcement) => (
@@ -103,7 +103,7 @@ export default function BoardPage() {
                             </div>
                             <h2 className={styles.announcementTitle}>{announcement.title}</h2>
                             <p className={styles.announcementContent}>{announcement.content}</p>
-                            <div className={styles.announcementMeta}><span className={styles.author}>👤 {announcement.createdByName}</span><span className={styles.date}>🕐 {formatDate(announcement.createdAt)}</span></div>
+                            <div className={styles.announcementMeta}><span className={styles.author}>{announcement.createdByName}</span><span className={styles.date}>{formatDate(announcement.createdAt)}</span></div>
                         </article>
                     ))}
                 </div>

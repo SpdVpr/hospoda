@@ -5,8 +5,8 @@ export default function LoadingScreen() {
         <div className={styles.container}>
             <div className={styles.content}>
                 <div className={styles.logo}>
-                    <span className={styles.logoIcon}>🍺</span>
-                    <span className={styles.logoText}>Hospoda</span>
+                    <img src="/logo-vesnice-icon.png" alt="Vesnice" className={styles.logoIcon} />
+                    <span className={styles.logoText}>Vesnice</span>
                 </div>
                 <div className={styles.spinner}></div>
                 <p className={styles.text}>Načítám...</p>

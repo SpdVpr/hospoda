@@ -80,8 +80,7 @@ export default function LoginPage() {
             <div className={styles.content}>
                 <div className={styles.header}>
                     <div className={styles.logo}>
-                        <span className={styles.logoIcon}>🍺</span>
-                        <span className={styles.logoText}>Hospoda</span>
+                        <img src="/logo-vesnice-main.png" alt="Vesnice" className={styles.logoMain} />
                     </div>
                     <h1 className={styles.title}>
                         {mode === 'login' ? 'Vítejte zpět!' : 'Vytvořte účet'}

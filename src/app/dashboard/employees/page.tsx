@@ -64,7 +64,7 @@ export default function EmployeesPage() {
     return (
         <div className={styles.container}>
             <div className={styles.header}>
-                <div><h1 className={styles.title}>👥 Zaměstnanci</h1><p className={styles.subtitle}>Správa zaměstnanců a oprávnění</p></div>
+                <div><h1 className={styles.title}>Zaměstnanci</h1><p className={styles.subtitle}>Správa zaměstnanců a oprávnění</p></div>
                 <div className={styles.stats}>
                     <div className={styles.stat}><span className={styles.statValue}>{employees.length}</span><span className={styles.statLabel}>Celkem</span></div>
                     <div className={styles.stat}><span className={styles.statValue}>{employees.filter(e => e.isActive).length}</span><span className={styles.statLabel}>Aktivních</span></div>
@@ -76,7 +76,7 @@ export default function EmployeesPage() {
                 <div className={styles.employeesList}>
                     <h2 className={styles.sectionTitle}>Seznam zaměstnanců</h2>
                     {loading ? (<div className={styles.loading}>{[...Array(5)].map((_, i) => <div key={i} className={styles.skeleton}></div>)}</div>
-                    ) : employees.length === 0 ? (<div className={styles.empty}><span className={styles.emptyIcon}>👥</span><p>Zatím žádní zaměstnanci</p></div>
+                    ) : employees.length === 0 ? (<div className={styles.empty}><p>Žádní zaměstnanci</p></div>
                     ) : (
                         <div className={styles.list}>
                             {employees.map((employee) => (
@@ -84,7 +84,7 @@ export default function EmployeesPage() {
                                     <div className={styles.avatar}>{employee.photoURL ? <img src={employee.photoURL} alt="" /> : <span>{getInitials(employee.displayName)}</span>}</div>
                                     <div className={styles.employeeInfo}><span className={styles.employeeName}>{employee.displayName}</span><span className={styles.employeeEmail}>{employee.email}</span></div>
                                     <div className={styles.employeeMeta}>
-                                        {employee.role === 'admin' && <span className={styles.adminBadge}>👑 Admin</span>}
+                                        {employee.role === 'admin' && <span className={styles.adminBadge}>Admin</span>}
                                         {employee.position && <span className={styles.positionBadge}>{employee.position}</span>}
                                         {!employee.isActive && <span className={styles.inactiveBadge}>Neaktivní</span>}
                                     </div>
@@ -114,7 +114,7 @@ export default function EmployeesPage() {
                             <div className={styles.formActions}>
                                 {selectedEmployee.uid !== userProfile?.uid && (
                                     <button type="button" className={styles.deleteBtn} onClick={handleDeleteEmployee} disabled={deleting}>
-                                        {deleting ? 'Mažu...' : '🗑️ Smazat'}
+                                        {deleting ? 'Mažu...' : 'Smazat'}
                                     </button>
                                 )}
                                 <button type="button" className={styles.cancelBtn} onClick={() => setSelectedEmployee(null)}>Zrušit</button>

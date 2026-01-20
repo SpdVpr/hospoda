@@ -9,8 +9,12 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Hospoda - Docházkový systém",
+  title: "Vesnice - Docházkový systém",
   description: "Moderní docházkový systém pro hospody a restaurace. Plánování směn, úkoly a správa zaměstnanců.",
+  icons: {
+    icon: "/favicon.png",
+    apple: "/logo-vesnice-icon.png",
+  },
 };
 
 export default function RootLayout({

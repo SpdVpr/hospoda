@@ -34,7 +34,7 @@ export default function ProfilePage() {
 
     return (
         <div className={styles.container}>
-            <div className={styles.header}><h1 className={styles.title}>👤 Můj profil</h1><p className={styles.subtitle}>Vaše osobní údaje a nastavení</p></div>
+            <div className={styles.header}><h1 className={styles.title}>Můj profil</h1><p className={styles.subtitle}>Vaše osobní údaje a nastavení</p></div>
 
             <div className={styles.content}>
                 <div className={styles.profileCard}>
@@ -43,7 +43,7 @@ export default function ProfilePage() {
                         <div className={styles.profileInfo}>
                             <h2>{userProfile?.displayName}</h2>
                             <p>{userProfile?.email}</p>
-                            <span className={styles.roleBadge}>{userProfile?.role === 'admin' ? '👑 Admin' : '👤 Zaměstnanec'}</span>
+                            <span className={styles.roleBadge}>{userProfile?.role === 'admin' ? 'Admin' : 'Zaměstnanec'}</span>
                         </div>
                     </div>
                     <div className={styles.profileStats}>

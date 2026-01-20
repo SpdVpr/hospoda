@@ -32,7 +32,7 @@ const shiftTemplates: ShiftTemplate[] = [
     { name: 'Celý den', startTime: '10:00', endTime: '22:00', icon: '📅' },
 ];
 
-const positions = ['Číšník', 'Barman', 'Kuchař', 'Pomocná síla'];
+const positions = ['Barman / Barmanka', 'Číšník / Servírka', 'Kuchař'];
 
 export default function CalendarPage() {
     const { userProfile, isAdmin } = useAuth();
@@ -43,7 +43,7 @@ export default function CalendarPage() {
     const [selectedDayForDetail, setSelectedDayForDetail] = useState<string | null>(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState<ShiftTemplate | null>(null);
-    const [customShift, setCustomShift] = useState({ startTime: '09:00', endTime: '17:00', position: 'Číšník', notes: '' });
+    const [customShift, setCustomShift] = useState({ startTime: '16:00', endTime: '21:00', position: 'Číšník / Servírka', notes: '' });
     const [isSelectionMode, setIsSelectionMode] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [shiftTasks, setShiftTasks] = useState<ShiftTask[]>([]);
@@ -344,7 +344,7 @@ export default function CalendarPage() {
         <div className={styles.container}>
             <div className={styles.header}>
                 <div>
-                    <h1 className={styles.title}>🗓️ Kalendář směn</h1>
+                    <h1 className={styles.title}>Kalendář směn</h1>
                     <p className={styles.subtitle}>Přehled a plánování směn</p>
                 </div>
                 {isAdmin && (
@@ -353,7 +353,7 @@ export default function CalendarPage() {
                             className={`${styles.selectionBtn} ${isSelectionMode ? styles.active : ''}`}
                             onClick={toggleSelectionMode}
                         >
-                            {isSelectionMode ? '✕ Zrušit výběr' : '📅 Vybrat dny'}
+                            {isSelectionMode ? 'Zrušit výběr' : 'Vybrat dny'}
                         </button>
                         {isSelectionMode && selectedDays.size > 0 && (
                             <button className={styles.createBtn} onClick={openCreateModal}>
@@ -448,7 +448,6 @@ export default function CalendarPage() {
 
                     {getShiftsForDay(selectedDayForDetail).length === 0 ? (
                         <div className={styles.noShifts}>
-                            <span>📅</span>
                             <p>Žádné směny pro tento den</p>
                             {isAdmin && (
                                 <button className={styles.addShiftBtn} onClick={() => { setSelectedDays(new Set([selectedDayForDetail])); setShowCreateModal(true); }}>
@@ -466,17 +465,17 @@ export default function CalendarPage() {
                                             <div className={styles.shiftHeader}>
                                                 <span className={styles.shiftTimeRange}>{shift.startTime} - {shift.endTime}</span>
                                                 <span className={`${styles.shiftStatus} ${shift.status === 'open' ? styles.statusOpen : styles.statusAssigned}`}>
-                                                    {shift.status === 'open' ? '🟠 Volná' : '🟢 Obsazená'}
+                                                    {shift.status === 'open' ? 'Volná' : 'Obsazená'}
                                                 </span>
                                             </div>
                                             <div className={styles.shiftPosition}>{shift.position}</div>
-                                            {shift.assignedToName && <div className={styles.shiftAssignee}>👤 {shift.assignedToName}</div>}
-                                            {shift.notes && <div className={styles.shiftNotes}>📝 {shift.notes}</div>}
+                                            {shift.assignedToName && <div className={styles.shiftAssignee}>{shift.assignedToName}</div>}
+                                            {shift.notes && <div className={styles.shiftNotes}>{shift.notes}</div>}
 
                                             {/* Tasks section */}
                                             {shiftTasksList.length > 0 && (
                                                 <div className={styles.shiftTasksSection}>
-                                                    <div className={styles.shiftTasksTitle}>✅ Úkoly ({shiftTasksList.length})</div>
+                                                    <div className={styles.shiftTasksTitle}>Úkoly ({shiftTasksList.length})</div>
                                                     {shiftTasksList.map((task: any) => (
                                                         <div key={task.id} className={styles.shiftTaskItem}>
                                                             <span className={styles.taskPriorityIcon}>
@@ -533,17 +532,17 @@ export default function CalendarPage() {
                                                     className={styles.addTaskBtn}
                                                     onClick={() => setAddTaskToShiftId(shift.id)}
                                                 >
-                                                    ✅ Úkol
+                                                    + Úkol
                                                 </button>
                                             )}
                                             {shift.status === 'open' && !isPast(shift.date) && (
                                                 <button className={styles.takeBtn} onClick={() => handleTakeShift(shift)}>Vzít směnu</button>
                                             )}
-                                            {shift.assignedTo === userProfile?.uid && !isPast(shift.date) && (
+                                            {isAdmin && shift.status === 'assigned' && !isPast(shift.date) && (
                                                 <button className={styles.releaseBtn} onClick={() => handleReleaseShift(shift)}>Uvolnit</button>
                                             )}
                                             {isAdmin && (
-                                                <button className={styles.deleteBtn} onClick={() => handleDeleteShift(shift)}>🗑️</button>
+                                                <button className={styles.deleteBtn} onClick={() => handleDeleteShift(shift)}>Smazat</button>
                                             )}
                                         </div>
                                     </div>
@@ -589,7 +588,6 @@ export default function CalendarPage() {
                                             className={`${styles.templateBtn} ${selectedTemplate?.name === template.name ? styles.selected : ''}`}
                                             onClick={() => setSelectedTemplate(selectedTemplate?.name === template.name ? null : template)}
                                         >
-                                            <span className={styles.templateIcon}>{template.icon}</span>
                                             <span className={styles.templateName}>{template.name}</span>
                                             <span className={styles.templateTime}>{template.startTime} - {template.endTime}</span>
                                         </button>
@@ -637,7 +635,7 @@ export default function CalendarPage() {
                                 />
                             </div>
 
-                            <div className={styles.divider}><span>✅ Úkoly pro směnu</span></div>
+                            <div className={styles.divider}><span>Úkoly pro směnu</span></div>
 
                             <div className={styles.tasksSection}>
                                 <div className={styles.quickTasks}>

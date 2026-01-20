@@ -15,13 +15,13 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-    { href: '/dashboard', label: 'Přehled', icon: '📊' },
-    { href: '/dashboard/shifts', label: 'Směny', icon: '📅' },
-    { href: '/dashboard/calendar', label: 'Kalendář', icon: '🗓️' },
-    { href: '/dashboard/tasks', label: 'Úkoly', icon: '✅' },
-    { href: '/dashboard/board', label: 'Nástěnka', icon: '📋' },
-    { href: '/dashboard/employees', label: 'Zaměstnanci', icon: '👥', adminOnly: true },
-    { href: '/dashboard/profile', label: 'Profil', icon: '👤' },
+    { href: '/dashboard', label: 'Přehled', icon: '' },
+    { href: '/dashboard/shifts', label: 'Směny', icon: '' },
+    { href: '/dashboard/calendar', label: 'Kalendář', icon: '' },
+    { href: '/dashboard/tasks', label: 'Úkoly', icon: '' },
+    { href: '/dashboard/board', label: 'Nástěnka', icon: '' },
+    { href: '/dashboard/employees', label: 'Zaměstnanci', icon: '', adminOnly: true },
+    { href: '/dashboard/profile', label: 'Profil', icon: '' },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -57,8 +57,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <span>{isMobileMenuOpen ? '✕' : '☰'}</span>
                 </button>
                 <Link href="/dashboard" className={styles.mobileLogo}>
-                    <span>🍺</span>
-                    <span>Hospoda</span>
+                    <img src="/logo-vesnice-icon.png" alt="Vesnice" className={styles.mobileLogoImg} />
+                    <span>Vesnice</span>
                 </Link>
                 <div className={styles.mobileAvatar}>
                     {userProfile?.photoURL ? (
@@ -72,8 +72,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <aside className={`${styles.sidebar} ${isMobileMenuOpen ? styles.sidebarOpen : ''}`}>
                 <div className={styles.sidebarContent}>
                     <Link href="/dashboard" className={styles.logo}>
-                        <span className={styles.logoIcon}>🍺</span>
-                        <span className={styles.logoText}>Hospoda</span>
+                        <img src="/logo-vesnice-sidebar.png" alt="Vesnice" className={styles.logoImg} />
                     </Link>
 
                     <nav className={styles.nav}>
@@ -83,7 +82,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 href={item.href}
                                 className={`${styles.navItem} ${pathname === item.href ? styles.navItemActive : ''}`}
                             >
-                                <span className={styles.navIcon}>{item.icon}</span>
                                 <span className={styles.navLabel}>{item.label}</span>
                             </Link>
                         ))}
@@ -101,13 +99,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             <div className={styles.userDetails}>
                                 <span className={styles.userName}>{userProfile?.displayName || 'Uživatel'}</span>
                                 <span className={styles.userRole}>
-                                    {isAdmin ? '👑 Admin' : '👤 Zaměstnanec'}
+                                    {isAdmin ? 'Admin' : 'Zaměstnanec'}
                                 </span>
                             </div>
                         </div>
                         <button className={styles.logoutBtn} onClick={() => signOut()}>
-                            <span>🚪</span>
-                            <span>Odhlásit</span>
+                            Odhlásit se
                         </button>
                     </div>
                 </div>
