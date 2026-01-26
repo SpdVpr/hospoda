@@ -1,10 +1,10 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { collection, query, where, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Shift, ShiftStatus } from '@/types';
+import { Shift, ShiftStatus, UserProfile } from '@/types';
 import styles from './page.module.css';
 
 interface ShiftFormData {
@@ -33,6 +33,12 @@ export default function ShiftsPage() {
     const [filter, setFilter] = useState<'all' | 'open' | 'mine'>('all');
     const [submitting, setSubmitting] = useState(false);
 
+    // Admin assign feature
+    const [employees, setEmployees] = useState<UserProfile[]>([]);
+    const [showAssignModal, setShowAssignModal] = useState(false);
+    const [assigningShift, setAssigningShift] = useState<Shift | null>(null);
+    const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
+
     const fetchShifts = async () => {
         try {
             const lastWeek = new Date();
@@ -47,7 +53,131 @@ export default function ShiftsPage() {
         }
     };
 
+    // Fetch employees for admin assign feature
+    const fetchEmployees = async () => {
+        try {
+            const usersQuery = query(collection(db, 'users'), orderBy('displayName', 'asc'));
+            const usersSnap = await getDocs(usersQuery);
+            setEmployees(usersSnap.docs.filter(d => d.data().isActive !== false).map(doc => ({ ...doc.data(), uid: doc.id })) as UserProfile[]);
+        } catch (error) {
+            console.error('Error fetching employees:', error);
+        }
+    };
+
     useEffect(() => { fetchShifts(); }, []);
+    useEffect(() => { if (isAdmin) { fetchEmployees(); } }, [isAdmin]);
+
+    // Admin assign shift to specific employee
+    const handleOpenAssignModal = (shift: Shift) => {
+        setAssigningShift(shift);
+        setSelectedEmployeeId('');
+        setShowAssignModal(true);
+    };
+
+    const handleAssignShift = async () => {
+        if (!assigningShift || !selectedEmployeeId || !userProfile) return;
+        const selectedEmployee = employees.find(e => e.uid === selectedEmployeeId);
+        if (!selectedEmployee) return;
+
+        try {
+            await updateDoc(doc(db, 'shifts', assigningShift.id), {
+                status: 'assigned',
+                assignedTo: selectedEmployee.uid,
+                assignedToName: selectedEmployee.displayName,
+                updatedAt: serverTimestamp()
+            });
+            setShowAssignModal(false);
+            setAssigningShift(null);
+            fetchShifts();
+        } catch (error) {
+            console.error('Error assigning shift:', error);
+        }
+    };
+
+    // Print export function
+    const handlePrintExport = () => {
+        // Get future shifts sorted by date
+        const today = new Date().toISOString().split('T')[0];
+        const futureShifts = shifts
+            .filter(s => s.date >= today)
+            .sort((a, b) => {
+                if (a.date !== b.date) return a.date.localeCompare(b.date);
+                return a.startTime.localeCompare(b.startTime);
+            });
+
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) return;
+
+        const formatDate = (dateStr: string) => {
+            const date = new Date(dateStr);
+            const days = ['Ne', 'Po', 'Út', 'St', 'Čt', 'Pá', 'So'];
+            return `${days[date.getDay()]} ${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()}`;
+        };
+
+        const html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Přehled směn - Vesnice</title>
+                <style>
+                    * { box-sizing: border-box; margin: 0; padding: 0; }
+                    body { font-family: Arial, sans-serif; padding: 20px; font-size: 14px; }
+                    h1 { text-align: center; margin-bottom: 20px; font-size: 20px; }
+                    .print-date { text-align: center; color: #666; margin-bottom: 20px; font-size: 12px; }
+                    table { width: 100%; border-collapse: collapse; }
+                    th, td { border: 1px solid #333; padding: 10px 8px; text-align: left; }
+                    th { background: #f0f0f0; font-weight: bold; }
+                    .empty-slot { 
+                        min-width: 150px; 
+                        border-bottom: 1px solid #999; 
+                        display: inline-block; 
+                        height: 20px;
+                    }
+                    .assigned-name { font-weight: bold; }
+                    .position { color: #555; font-size: 12px; }
+                    @media print {
+                        body { padding: 10px; }
+                        @page { margin: 1cm; }
+                    }
+                </style>
+            </head>
+            <body>
+                <h1>📋 Přehled směn - Vesnice</h1>
+                <p class="print-date">Vygenerováno: ${new Date().toLocaleDateString('cs-CZ')} ${new Date().toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 140px;">Datum</th>
+                            <th style="width: 100px;">Čas</th>
+                            <th style="width: 140px;">Pozice</th>
+                            <th>Jméno</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${futureShifts.map(shift => `
+                            <tr>
+                                <td>${formatDate(shift.date)}</td>
+                                <td>${shift.startTime} - ${shift.endTime}</td>
+                                <td class="position">${shift.position}</td>
+                                <td>
+                                    ${shift.assignedToName
+                ? `<span class="assigned-name">${shift.assignedToName}</span>`
+                : '<span class="empty-slot"></span>'}
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </body>
+            </html>
+        `;
+
+        printWindow.document.write(html);
+        printWindow.document.close();
+        printWindow.onload = () => {
+            printWindow.print();
+        };
+    };
 
     const handleOpenModal = (shift?: Shift) => {
         if (shift) {
@@ -126,11 +256,18 @@ export default function ShiftsPage() {
                     <h1 className={styles.title}>Směny</h1>
                     <p className={styles.subtitle}>{isAdmin ? 'Spravujte směny zaměstnanců' : 'Přehled a přihlašování na směny'}</p>
                 </div>
-                {isAdmin && (
-                    <button className={styles.createBtn} onClick={() => handleOpenModal()}>
-                        <span>+</span><span>Nová směna</span>
-                    </button>
-                )}
+                <div className={styles.headerActions}>
+                    {isAdmin && (
+                        <button className={styles.printBtn} onClick={handlePrintExport} title="Export pro tisk">
+                            🖨️ Tisk
+                        </button>
+                    )}
+                    {isAdmin && (
+                        <button className={styles.createBtn} onClick={() => handleOpenModal()}>
+                            <span>+</span><span>Nová směna</span>
+                        </button>
+                    )}
+                </div>
             </div>
 
             <div className={styles.filters}>
@@ -166,6 +303,9 @@ export default function ShiftsPage() {
                             <div className={styles.shiftActions}>
                                 {shift.status === 'open' && !isPast(shift.date) && (
                                     <button className={styles.takeBtn} onClick={() => handleTakeShift(shift)}>Vzít</button>
+                                )}
+                                {isAdmin && shift.status === 'open' && !isPast(shift.date) && (
+                                    <button className={styles.assignBtn} onClick={() => handleOpenAssignModal(shift)}>Přiřadit</button>
                                 )}
                                 {isAdmin && shift.status === 'assigned' && !isPast(shift.date) && (
                                     <button className={styles.releaseBtn} onClick={() => handleReleaseShift(shift)}>Uvolnit</button>
@@ -221,6 +361,51 @@ export default function ShiftsPage() {
                                 <button type="submit" className={styles.submitBtn} disabled={submitting}>{submitting ? 'Ukládám...' : (editingShift ? 'Uložit' : 'Vytvořit')}</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Assign Shift Modal */}
+            {showAssignModal && assigningShift && (
+                <div className={styles.modalOverlay} onClick={() => setShowAssignModal(false)}>
+                    <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+                        <div className={styles.modalHeader}>
+                            <h2>Přiřadit směnu</h2>
+                            <button className={styles.closeBtn} onClick={() => setShowAssignModal(false)}>✕</button>
+                        </div>
+                        <div className={styles.form}>
+                            <div className={styles.assignInfo}>
+                                <p><strong>Datum:</strong> {new Date(assigningShift.date).toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                                <p><strong>Čas:</strong> {assigningShift.startTime} - {assigningShift.endTime}</p>
+                                <p><strong>Pozice:</strong> {assigningShift.position}</p>
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label htmlFor="employee">Vyberte zaměstnance</label>
+                                <select
+                                    id="employee"
+                                    value={selectedEmployeeId}
+                                    onChange={(e) => setSelectedEmployeeId(e.target.value)}
+                                >
+                                    <option value="">-- Vyberte zaměstnance --</option>
+                                    {employees.map(emp => (
+                                        <option key={emp.uid} value={emp.uid}>
+                                            {emp.displayName} {emp.position ? `(${emp.position})` : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className={styles.modalFooter}>
+                                <button type="button" className={styles.cancelBtn} onClick={() => setShowAssignModal(false)}>Zrušit</button>
+                                <button
+                                    type="button"
+                                    className={styles.submitBtn}
+                                    onClick={handleAssignShift}
+                                    disabled={!selectedEmployeeId}
+                                >
+                                    Přiřadit
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
