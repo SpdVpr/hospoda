@@ -1,0 +1,458 @@
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.header {
+    margin-bottom: var(--spacing-xl);
+}
+
+.title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.subtitle {
+    color: var(--text-muted);
+    font-size: 0.9375rem;
+}
+
+/* Upload Section */
+.uploadSection {
+    margin-bottom: var(--spacing-xl);
+}
+
+.uploadBox {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: center;
+    padding: var(--spacing-md);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-lg);
+    border: 2px dashed var(--border-color);
+}
+
+@media (max-width: 640px) {
+    .uploadBox {
+        flex-direction: column;
+    }
+}
+
+.captionInput {
+    flex: 1;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 0.9375rem;
+}
+
+.captionInput::placeholder {
+    color: var(--text-muted);
+}
+
+.captionInput:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.fileInput {
+    display: none;
+}
+
+.uploadBtn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background: var(--gradient-primary);
+    color: var(--text-inverse);
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+}
+
+.uploadBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.uploadingSpinner {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Photo Grid - Pinterest Masonry Style */
+.photoGrid {
+    columns: 4;
+    column-gap: var(--spacing-md);
+}
+
+@media (max-width: 1024px) {
+    .photoGrid {
+        columns: 3;
+    }
+}
+
+@media (max-width: 768px) {
+    .photoGrid {
+        columns: 2;
+        column-gap: var(--spacing-sm);
+    }
+}
+
+.photoCard {
+    position: relative;
+    break-inside: avoid;
+    margin-bottom: var(--spacing-md);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    cursor: pointer;
+    background: var(--bg-tertiary);
+}
+
+@media (max-width: 768px) {
+    .photoCard {
+        margin-bottom: var(--spacing-sm);
+    }
+}
+
+.photoImg {
+    width: 100%;
+    height: auto;
+    display: block;
+    transition: transform var(--transition-normal);
+}
+
+.photoCard:hover .photoImg {
+    transform: scale(1.03);
+}
+
+.photoOverlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(transparent 50%, rgba(0, 0, 0, 0.7));
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: var(--spacing-sm);
+}
+
+.photoCard:hover .photoOverlay {
+    opacity: 1;
+}
+
+.likeCount {
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.photoCaption {
+    color: white;
+    font-size: 0.75rem;
+    max-width: 70%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Loading & Empty States */
+.loading {
+    columns: 4;
+    column-gap: var(--spacing-md);
+}
+
+@media (max-width: 1024px) {
+    .loading {
+        columns: 3;
+    }
+}
+
+@media (max-width: 768px) {
+    .loading {
+        columns: 2;
+        column-gap: var(--spacing-sm);
+    }
+}
+
+.skeleton {
+    break-inside: avoid;
+    margin-bottom: var(--spacing-md);
+    background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: var(--radius-lg);
+}
+
+/* Různé výšky skeletonů pro realističtější efekt */
+.skeleton:nth-child(1) {
+    height: 280px;
+}
+
+.skeleton:nth-child(2) {
+    height: 200px;
+}
+
+.skeleton:nth-child(3) {
+    height: 320px;
+}
+
+.skeleton:nth-child(4) {
+    height: 240px;
+}
+
+.skeleton:nth-child(5) {
+    height: 180px;
+}
+
+.skeleton:nth-child(6) {
+    height: 260px;
+}
+
+@media (max-width: 768px) {
+    .skeleton:nth-child(1) {
+        height: 180px;
+    }
+
+    .skeleton:nth-child(2) {
+        height: 140px;
+    }
+
+    .skeleton:nth-child(3) {
+        height: 200px;
+    }
+
+    .skeleton:nth-child(4) {
+        height: 160px;
+    }
+
+    .skeleton:nth-child(5) {
+        height: 120px;
+    }
+
+    .skeleton:nth-child(6) {
+        height: 170px;
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-3xl);
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.emptyIcon {
+    font-size: 4rem;
+    margin-bottom: var(--spacing-md);
+    opacity: 0.5;
+}
+
+.emptySubtext {
+    font-size: 0.875rem;
+    margin-top: var(--spacing-xs);
+    opacity: 0.7;
+}
+
+/* Lightbox Modal */
+.lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-lg);
+}
+
+.lightboxContent {
+    position: relative;
+    max-width: 900px;
+    max-height: 90vh;
+    width: 100%;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+@media (max-width: 768px) {
+    .lightboxContent {
+        max-height: 100vh;
+        border-radius: 0;
+    }
+
+    .lightbox {
+        padding: 0;
+    }
+}
+
+.closeBtn {
+    position: absolute;
+    top: var(--spacing-md);
+    right: var(--spacing-md);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    border-radius: var(--radius-full);
+    color: white;
+    font-size: 1.25rem;
+    cursor: pointer;
+    z-index: 10;
+    transition: all var(--transition-fast);
+}
+
+.closeBtn:hover {
+    background: rgba(0, 0, 0, 0.8);
+    transform: scale(1.1);
+}
+
+.lightboxImg {
+    width: 100%;
+    max-height: 60vh;
+    object-fit: contain;
+    background: black;
+}
+
+.lightboxInfo {
+    padding: var(--spacing-lg);
+}
+
+.lightboxAuthor {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+}
+
+.authorPhoto {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-full);
+    object-fit: cover;
+}
+
+.authorInitials {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-full);
+    background: var(--gradient-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-inverse);
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.authorDetails {
+    display: flex;
+    flex-direction: column;
+}
+
+.authorName {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.photoDate {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.lightboxCaption {
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-md);
+    line-height: 1.5;
+}
+
+.lightboxActions {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: center;
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--border-color);
+}
+
+.likeBtn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.likeBtn:hover {
+    background: var(--bg-primary);
+    border-color: var(--accent-secondary);
+}
+
+.likeBtn.liked {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: var(--accent-secondary);
+}
+
+.deletePhotoBtn {
+    margin-left: auto;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: transparent;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: var(--radius-md);
+    color: var(--accent-secondary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.deletePhotoBtn:hover {
+    background: rgba(239, 68, 68, 0.1);
+}

@@ -1,5 +1,8 @@
 // User roles
-export type UserRole = 'admin' | 'employee';
+// admin = full access
+// shift_manager = can create/assign shifts (vedoucí směny)
+// employee = basic access
+export type UserRole = 'admin' | 'shift_manager' | 'employee';
 
 // User profile
 export interface UserProfile {
@@ -75,4 +78,17 @@ export interface Announcement {
     createdByName: string;
     createdAt: Date;
     updatedAt: Date;
+}
+
+// Gallery Photo (Vesnický Instagram)
+export interface GalleryPhoto {
+    id: string;
+    imageUrl: string;
+    storagePath?: string; // Path in Firebase Storage for deletion
+    caption?: string;
+    uploadedBy: string;
+    uploadedByName: string;
+    uploadedByPhoto?: string;
+    likes: string[]; // array of user UIDs who liked
+    createdAt: Date;
 }

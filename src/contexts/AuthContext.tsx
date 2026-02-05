@@ -9,6 +9,7 @@ import {
     signInWithPopup,
     signOut as firebaseSignOut,
     updateProfile,
+    OAuthProvider,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, googleProvider } from '@/lib/firebase';
@@ -22,8 +23,11 @@ interface AuthContextType {
     signInWithEmail: (email: string, password: string) => Promise<void>;
     signUpWithEmail: (email: string, password: string, displayName: string) => Promise<void>;
     signInWithGoogle: () => Promise<void>;
+    signInWithApple: () => Promise<void>;
     signOut: () => Promise<void>;
     isAdmin: boolean;
+    isShiftManager: boolean;
+    canManageShifts: boolean; // admin OR shift_manager
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -183,6 +187,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    const signInWithApple = async () => {
+        try {
+            setError(null);
+            const appleProvider = new OAuthProvider('apple.com');
+            appleProvider.addScope('email');
+            appleProvider.addScope('name');
+            await signInWithPopup(auth, appleProvider);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Chyba při přihlášení přes Apple';
+            setError(message);
+            throw err;
+        }
+    };
+
     const signOut = async () => {
         try {
             await firebaseSignOut(auth);
@@ -195,6 +213,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const isAdmin = userProfile?.role === 'admin';
+    const isShiftManager = userProfile?.role === 'shift_manager';
+    const canManageShifts = isAdmin || isShiftManager;
 
     return (
         <AuthContext.Provider
@@ -206,8 +226,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 signInWithEmail,
                 signUpWithEmail,
                 signInWithGoogle,
+                signInWithApple,
                 signOut,
                 isAdmin,
+                isShiftManager,
+                canManageShifts,
             }}
         >
             {children}

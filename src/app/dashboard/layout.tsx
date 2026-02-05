@@ -20,12 +20,13 @@ const navItems: NavItem[] = [
     { href: '/dashboard/calendar', label: 'Kalendář', icon: '' },
     { href: '/dashboard/tasks', label: 'Úkoly', icon: '' },
     { href: '/dashboard/board', label: 'Nástěnka', icon: '' },
+    { href: '/dashboard/gallery', label: 'Galerie', icon: '' },
     { href: '/dashboard/employees', label: 'Zaměstnanci', icon: '', adminOnly: true },
     { href: '/dashboard/profile', label: 'Profil', icon: '' },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-    const { user, userProfile, loading, signOut, isAdmin } = useAuth();
+    const { user, userProfile, loading, signOut, isAdmin, isShiftManager, canManageShifts } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -58,7 +59,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </button>
                 <Link href="/dashboard" className={styles.mobileLogo}>
                     <img src="/logo-vesnice-icon.png" alt="Vesnice" className={styles.mobileLogoImg} />
-                    <span>Vesnice</span>
                 </Link>
                 <div className={styles.mobileAvatar}>
                     {userProfile?.photoURL ? (
@@ -99,7 +99,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             <div className={styles.userDetails}>
                                 <span className={styles.userName}>{userProfile?.displayName || 'Uživatel'}</span>
                                 <span className={styles.userRole}>
-                                    {isAdmin ? 'Admin' : 'Zaměstnanec'}
+                                    {isAdmin ? 'Admin' : isShiftManager ? 'Vedoucí směny' : 'Zaměstnanec'}
                                 </span>
                             </div>
                         </div>

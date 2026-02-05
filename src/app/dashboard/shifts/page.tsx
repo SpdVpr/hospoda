@@ -24,7 +24,7 @@ const initialFormData: ShiftFormData = {
 };
 
 export default function ShiftsPage() {
-    const { userProfile, isAdmin } = useAuth();
+    const { userProfile, isAdmin, canManageShifts } = useAuth();
     const [shifts, setShifts] = useState<Shift[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -65,7 +65,7 @@ export default function ShiftsPage() {
     };
 
     useEffect(() => { fetchShifts(); }, []);
-    useEffect(() => { if (isAdmin) { fetchEmployees(); } }, [isAdmin]);
+    useEffect(() => { if (canManageShifts) { fetchEmployees(); } }, [canManageShifts]);
 
     // Admin assign shift to specific employee
     const handleOpenAssignModal = (shift: Shift) => {
@@ -194,7 +194,7 @@ export default function ShiftsPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!userProfile || !isAdmin) return;
+        if (!userProfile || !canManageShifts) return;
         setSubmitting(true);
         try {
             if (editingShift) {
@@ -232,7 +232,7 @@ export default function ShiftsPage() {
     };
 
     const handleDeleteShift = async (shift: Shift) => {
-        if (!isAdmin || !confirm('Opravdu chcete smazat tuto směnu?')) return;
+        if (!canManageShifts || !confirm('Opravdu chcete smazat tuto směnu?')) return;
         try {
             await deleteDoc(doc(db, 'shifts', shift.id));
             fetchShifts();
@@ -257,12 +257,12 @@ export default function ShiftsPage() {
                     <p className={styles.subtitle}>{isAdmin ? 'Spravujte směny zaměstnanců' : 'Přehled a přihlašování na směny'}</p>
                 </div>
                 <div className={styles.headerActions}>
-                    {isAdmin && (
+                    {canManageShifts && (
                         <button className={styles.printBtn} onClick={handlePrintExport} title="Export pro tisk">
                             🖨️ Tisk
                         </button>
                     )}
-                    {isAdmin && (
+                    {canManageShifts && (
                         <button className={styles.createBtn} onClick={() => handleOpenModal()}>
                             <span>+</span><span>Nová směna</span>
                         </button>
@@ -281,7 +281,7 @@ export default function ShiftsPage() {
             ) : filteredShifts.length === 0 ? (
                 <div className={styles.empty}>
                     <p className={styles.emptyText}>Žádné směny</p>
-                    {isAdmin && <button className={styles.emptyBtn} onClick={() => handleOpenModal()}>Vytvořit první směnu</button>}
+                    {canManageShifts && <button className={styles.emptyBtn} onClick={() => handleOpenModal()}>Vytvořit první směnu</button>}
                 </div>
             ) : (
                 <div className={styles.shiftsList}>
@@ -304,13 +304,13 @@ export default function ShiftsPage() {
                                 {shift.status === 'open' && !isPast(shift.date) && (
                                     <button className={styles.takeBtn} onClick={() => handleTakeShift(shift)}>Vzít</button>
                                 )}
-                                {isAdmin && shift.status === 'open' && !isPast(shift.date) && (
+                                {canManageShifts && shift.status === 'open' && !isPast(shift.date) && (
                                     <button className={styles.assignBtn} onClick={() => handleOpenAssignModal(shift)}>Přiřadit</button>
                                 )}
-                                {isAdmin && shift.status === 'assigned' && !isPast(shift.date) && (
+                                {canManageShifts && shift.status === 'assigned' && !isPast(shift.date) && (
                                     <button className={styles.releaseBtn} onClick={() => handleReleaseShift(shift)}>Uvolnit</button>
                                 )}
-                                {isAdmin && (
+                                {canManageShifts && (
                                     <>
                                         <button className={styles.editBtn} onClick={() => handleOpenModal(shift)}>✏️</button>
                                         <button className={styles.deleteBtn} onClick={() => handleDeleteShift(shift)}>🗑️</button>

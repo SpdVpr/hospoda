@@ -146,21 +146,30 @@
     box-shadow: var(--shadow-xl);
 }
 
-.googleBtn {
-    width: 100%;
+.socialButtons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-sm);
+}
+
+.googleBtn,
+.appleBtn {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: var(--spacing-sm);
     padding: var(--spacing-md);
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
-    color: var(--text-primary);
     font-size: 0.9375rem;
     font-weight: 500;
     cursor: pointer;
     transition: all var(--transition-fast);
+}
+
+.googleBtn {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
 }
 
 .googleBtn:hover:not(:disabled) {
@@ -169,14 +178,27 @@
     transform: translateY(-1px);
 }
 
-.googleBtn:disabled {
+.appleBtn {
+    background: #000;
+    border: 1px solid #333;
+    color: #fff;
+}
+
+.appleBtn:hover:not(:disabled) {
+    background: #1a1a1a;
+    transform: translateY(-1px);
+}
+
+.googleBtn:disabled,
+.appleBtn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
 
-.googleIcon {
+.socialIcon {
     width: 1.25rem;
     height: 1.25rem;
+    flex-shrink: 0;
 }
 
 .divider {

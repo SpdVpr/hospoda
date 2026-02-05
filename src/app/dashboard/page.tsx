@@ -60,12 +60,46 @@ export default function DashboardPage() {
         return 'Dobrý večer';
     };
 
+    // Základní české skloňování do 5. pádu (vokativ)
+    const toVocative = (name: string): string => {
+        if (!name) return '';
+        const firstName = name.split(' ')[0];
+
+        // Základní pravidla pro vokativ
+        // Mužská jména končící na -a (Vojta, Jirka, Honza...)
+        if (firstName.endsWith('a')) {
+            return firstName.slice(0, -1) + 'o';
+        }
+        // Ženská jména končící na -a (Jana, Petra, Lucie...)
+        if (firstName.endsWith('ie')) {
+            return firstName; // Lucie -> Lucie
+        }
+        // Mužská jména končící na souhlásku (Petr, Jan, Martin...)
+        if (firstName.match(/[bcčdďfghjklmnňpqrřsštťvwxzž]$/i)) {
+            // Některá jména mají speciální tvary
+            const specialCases: Record<string, string> = {
+                'Petr': 'Petře', 'Jan': 'Honzo', 'Pavel': 'Pavle',
+                'Martin': 'Martine', 'Tomáš': 'Tomáši', 'Lukáš': 'Lukáši',
+                'Jiří': 'Jiří', 'Ondřej': 'Ondřeji', 'Adam': 'Adame',
+                'David': 'Davide', 'Jakub': 'Jakube', 'Filip': 'Filipe',
+            };
+            if (specialCases[firstName]) return specialCases[firstName];
+            // Obecné pravidlo - přidáme -e nebo -i
+            if (firstName.endsWith('k')) return firstName.slice(0, -1) + 'ku';
+            if (firstName.endsWith('r')) return firstName + 'e';
+            return firstName + 'e';
+        }
+        return firstName;
+    };
+
+    const userName = userProfile?.displayName?.split(' ')[0];
+
     return (
         <div className={styles.container}>
             <div className={styles.header}>
                 <div>
                     <h1 className={styles.greeting}>
-                        {getGreeting()}, {userProfile?.displayName?.split(' ')[0] || 'uživateli'}!
+                        {getGreeting()}{userName ? `, ${toVocative(userName)}` : ''}!
                     </h1>
                     <p className={styles.subtitle}>
                         {new Date().toLocaleDateString('cs-CZ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}

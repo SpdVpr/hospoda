@@ -69,6 +69,7 @@ export default function EmployeesPage() {
                     <div className={styles.stat}><span className={styles.statValue}>{employees.length}</span><span className={styles.statLabel}>Celkem</span></div>
                     <div className={styles.stat}><span className={styles.statValue}>{employees.filter(e => e.isActive).length}</span><span className={styles.statLabel}>Aktivních</span></div>
                     <div className={styles.stat}><span className={styles.statValue}>{employees.filter(e => e.role === 'admin').length}</span><span className={styles.statLabel}>Adminů</span></div>
+                    <div className={styles.stat}><span className={styles.statValue}>{employees.filter(e => e.role === 'shift_manager').length}</span><span className={styles.statLabel}>Vedoucích</span></div>
                 </div>
             </div>
 
@@ -85,6 +86,7 @@ export default function EmployeesPage() {
                                     <div className={styles.employeeInfo}><span className={styles.employeeName}>{employee.displayName}</span><span className={styles.employeeEmail}>{employee.email}</span></div>
                                     <div className={styles.employeeMeta}>
                                         {employee.role === 'admin' && <span className={styles.adminBadge}>Admin</span>}
+                                        {employee.role === 'shift_manager' && <span className={styles.managerBadge}>Vedoucí</span>}
                                         {employee.position && <span className={styles.positionBadge}>{employee.position}</span>}
                                         {!employee.isActive && <span className={styles.inactiveBadge}>Neaktivní</span>}
                                     </div>
@@ -104,8 +106,14 @@ export default function EmployeesPage() {
                         <form className={styles.editForm} onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
                             <div className={styles.formGroup}>
                                 <label htmlFor="role">Role</label>
-                                <select id="role" value={editData.role} onChange={(e) => setEditData({ ...editData, role: e.target.value as UserRole })} disabled={selectedEmployee.uid === userProfile?.uid}><option value="employee">Zaměstnanec</option><option value="admin">Admin</option></select>
+                                <select id="role" value={editData.role} onChange={(e) => setEditData({ ...editData, role: e.target.value as UserRole })} disabled={selectedEmployee.uid === userProfile?.uid}>
+                                    <option value="employee">Zaměstnanec</option>
+                                    <option value="shift_manager">Vedoucí směny</option>
+                                    <option value="admin">Admin</option>
+                                </select>
                                 {selectedEmployee.uid === userProfile?.uid && <span className={styles.hint}>Nemůžete změnit vlastní roli</span>}
+                                {editData.role === 'shift_manager' && <span className={styles.hintInfo}>💼 Může vytvářet a přiřazovat směny</span>}
+                                {editData.role === 'admin' && <span className={styles.hintWarning}>⚠️ Plný přístup ke všem funkcím</span>}
                             </div>
                             <div className={styles.formGroup}><label htmlFor="position">Pozice</label><input type="text" id="position" value={editData.position} onChange={(e) => setEditData({ ...editData, position: e.target.value })} placeholder="např. Číšník, Barman..." /></div>
                             <div className={styles.formGroup}><label htmlFor="hourlyRate">Hodinová mzda (Kč)</label><input type="number" id="hourlyRate" value={editData.hourlyRate} onChange={(e) => setEditData({ ...editData, hourlyRate: Number(e.target.value) })} min="0" step="10" /></div>
