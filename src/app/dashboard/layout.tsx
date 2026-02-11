@@ -20,7 +20,7 @@ const navItems: NavItem[] = [
     { href: '/dashboard/calendar', label: 'Kalendář', icon: '' },
     { href: '/dashboard/tasks', label: 'Úkoly', icon: '' },
     { href: '/dashboard/board', label: 'Nástěnka', icon: '' },
-    { href: '/dashboard/gallery', label: 'Galerie', icon: '' },
+    { href: '/dashboard/gallery', label: 'INSTAVES', icon: '' },
     { href: '/dashboard/employees', label: 'Zaměstnanci', icon: '', adminOnly: true },
     { href: '/dashboard/profile', label: 'Profil', icon: '' },
 ];

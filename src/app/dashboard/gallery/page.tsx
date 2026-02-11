@@ -202,7 +202,7 @@ export default function GalleryPage() {
         <div className={styles.container}>
             <div className={styles.header}>
                 <div>
-                    <h1 className={styles.title}>📸 Galerie</h1>
+                    <h1 className={styles.title}>INSTAVES</h1>
                     <p className={styles.subtitle}>Vesnický Instagram – sdílejte společné momenty</p>
                 </div>
             </div>
@@ -228,12 +228,9 @@ export default function GalleryPage() {
                     />
                     <label htmlFor="photo-upload" className={styles.uploadBtn}>
                         {uploading ? (
-                            <span className={styles.uploadingSpinner}>⏳ Nahrávám...</span>
+                            <span className={styles.uploadingSpinner}>Nahrávám...</span>
                         ) : (
-                            <>
-                                <span>📷</span>
-                                <span>Přidat fotku</span>
-                            </>
+                            <span>Přidat fotku</span>
                         )}
                     </label>
                 </div>
@@ -246,7 +243,6 @@ export default function GalleryPage() {
                 </div>
             ) : photos.length === 0 ? (
                 <div className={styles.empty}>
-                    <span className={styles.emptyIcon}>📷</span>
                     <p>Zatím žádné fotky</p>
                     <p className={styles.emptySubtext}>Buďte první, kdo přidá fotku!</p>
                 </div>
@@ -258,9 +254,9 @@ export default function GalleryPage() {
                             className={styles.photoCard}
                             onClick={() => setSelectedPhoto(photo)}
                         >
-                            <img src={photo.imageUrl} alt={photo.caption || 'Galerie'} className={styles.photoImg} />
+                            <img src={photo.imageUrl} alt={photo.caption || 'INSTAVES'} className={styles.photoImg} />
                             <div className={styles.photoOverlay}>
-                                <span className={styles.likeCount}>❤️ {photo.likes?.length || 0}</span>
+                                <span className={styles.likeCount}>{photo.likes?.length || 0}</span>
                             </div>
                         </div>
                     ))}
@@ -271,9 +267,9 @@ export default function GalleryPage() {
             {selectedPhoto && (
                 <div className={styles.lightbox} onClick={() => setSelectedPhoto(null)}>
                     <div className={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
-                        <button className={styles.closeBtn} onClick={() => setSelectedPhoto(null)}>✕</button>
+                        <button className={styles.closeBtn} onClick={() => setSelectedPhoto(null)}>×</button>
 
-                        <img src={selectedPhoto.imageUrl} alt={selectedPhoto.caption || 'Galerie'} className={styles.lightboxImg} />
+                        <img src={selectedPhoto.imageUrl} alt={selectedPhoto.caption || 'INSTAVES'} className={styles.lightboxImg} />
 
                         <div className={styles.lightboxInfo}>
                             <div className={styles.lightboxAuthor}>
@@ -299,8 +295,8 @@ export default function GalleryPage() {
                                     className={`${styles.likeBtn} ${selectedPhoto.likes?.includes(userProfile?.uid || '') ? styles.liked : ''}`}
                                     onClick={() => handleLike(selectedPhoto)}
                                 >
-                                    {selectedPhoto.likes?.includes(userProfile?.uid || '') ? '❤️' : '🤍'}
-                                    {selectedPhoto.likes?.length || 0}
+                                    {selectedPhoto.likes?.includes(userProfile?.uid || '') ? 'Líbí se' : 'To se mi líbí'}
+                                    ({selectedPhoto.likes?.length || 0})
                                 </button>
 
                                 {(selectedPhoto.uploadedBy === userProfile?.uid || isAdmin) && (
@@ -308,7 +304,7 @@ export default function GalleryPage() {
                                         className={styles.deletePhotoBtn}
                                         onClick={() => handleDelete(selectedPhoto)}
                                     >
-                                        🗑️ Smazat
+                                        Smazat
                                     </button>
                                 )}
                             </div>
