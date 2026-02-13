@@ -69,7 +69,7 @@ export default function ProfilePage() {
                     <div className={styles.infoList}>
                         <div className={styles.infoItem}><span className={styles.infoLabel}>Email</span><span className={styles.infoValue}>{userProfile?.email}</span></div>
                         <div className={styles.infoItem}><span className={styles.infoLabel}>ID uživatele</span><span className={styles.infoValue}>{user?.uid}</span></div>
-                        <div className={styles.infoItem}><span className={styles.infoLabel}>Přihlášení</span><span className={styles.infoValue}>{user?.providerData[0]?.providerId === 'google.com' ? 'Google' : 'Email a heslo'}</span></div>
+                        <div className={styles.infoItem}><span className={styles.infoLabel}>Přihlášení</span><span className={styles.infoValue}>{user?.providerData[0]?.providerId === 'google.com' ? 'Google' : user?.providerData[0]?.providerId === 'apple.com' ? 'Apple' : 'Email a heslo'}</span></div>
                         <div className={styles.infoItem}><span className={styles.infoLabel}>Stav</span><span className={`${styles.infoValue} ${userProfile?.isActive ? styles.active : styles.inactive}`}>{userProfile?.isActive ? '✓ Aktivní' : '✕ Neaktivní'}</span></div>
                     </div>
                     <div className={styles.infoNote}><p>💡 Pro změnu emailu nebo hesla kontaktujte administrátora.</p></div>

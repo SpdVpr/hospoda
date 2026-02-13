@@ -68,25 +68,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // Only admin@hospoda.local gets admin role, everyone else is employee
             const userRole = isAdminUser ? 'admin' : 'employee';
 
-            const newProfile: Omit<UserProfile, 'createdAt' | 'updatedAt'> = {
+            // Build profile object — IMPORTANT: exclude undefined values (Firestore rejects them)
+            const newProfile: Record<string, any> = {
                 uid: firebaseUser.uid,
                 email: firebaseUser.email || '',
                 displayName: isAdminUser ? 'Administrátor' : (firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Uživatel'),
-                photoURL: firebaseUser.photoURL || undefined,
                 role: userRole,
                 isActive: true,
-            };
-
-            await setDoc(profileRef, {
-                ...newProfile,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
-            });
+            };
+            // Only include photoURL if it's a real value
+            if (firebaseUser.photoURL) {
+                newProfile.photoURL = firebaseUser.photoURL;
+            }
 
-            return { ...newProfile, createdAt: new Date(), updatedAt: new Date() } as UserProfile;
+            // Attempt to create with retry
+            let writeSuccess = false;
+            for (let attempt = 0; attempt < 2; attempt++) {
+                try {
+                    await setDoc(profileRef, newProfile);
+                    writeSuccess = true;
+                    console.log(`✓ Profile created for ${firebaseUser.email || firebaseUser.uid}`);
+                    break;
+                } catch (writeErr) {
+                    console.error(`Profile create attempt ${attempt + 1} failed:`, writeErr);
+                    if (attempt === 0) {
+                        // Wait 1s before retry
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+            }
+
+            if (writeSuccess) {
+                return { ...newProfile, createdAt: new Date(), updatedAt: new Date() } as UserProfile;
+            }
+
+            // Fallback: return a temporary profile from Auth data so UI doesn't break
+            console.warn('Could not create Firestore profile, using fallback from Auth data');
+            return {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email || '',
+                displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Uživatel',
+                role: 'employee',
+                isActive: true,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            } as UserProfile;
         } catch (err) {
             console.error('Error fetching/creating profile:', err);
-            return null;
+            // Even on total failure, return fallback so UI shows something useful
+            return {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email || '',
+                displayName: firebaseUser.displayName || 'Uživatel',
+                role: 'employee',
+                isActive: true,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            } as UserProfile;
         }
     };
 
