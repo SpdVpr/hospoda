@@ -236,6 +236,11 @@
     background: linear-gradient(135deg, #3b82f6, #2563eb);
 }
 
+.legendBox.seniorShift {
+    background: linear-gradient(135deg, #f43f5e, #be123c);
+    box-shadow: 0 0 0 1px rgba(244, 63, 94, 0.3);
+}
+
 .calendar {
     padding: var(--spacing-xs);
 }
@@ -439,6 +444,26 @@
     color: white;
 }
 
+/* senior_only category overrides — vždy růžovo-červený rámeček a tečka */
+.shiftBlock.shiftSeniorOnly {
+    box-shadow: 0 0 0 2px #f43f5e, inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+    position: relative;
+}
+
+.shiftCatDot {
+    color: #f43f5e;
+    font-size: 0.5rem;
+    margin-left: 2px;
+    text-shadow: 0 0 2px rgba(0, 0, 0, 0.6);
+}
+
+@media (min-width: 768px) {
+    .shiftCatDot {
+        font-size: 0.625rem;
+        margin-left: 4px;
+    }
+}
+
 .shiftTime {
     font-weight: 600;
 }
@@ -577,6 +602,46 @@
 .shiftCard.assigned {
     background: rgba(34, 197, 94, 0.08);
     border-left-color: var(--accent-success);
+}
+
+.shiftCard.cardSeniorOnly {
+    border-left-color: #f43f5e !important;
+    background: linear-gradient(135deg, rgba(244, 63, 94, 0.08), rgba(244, 63, 94, 0.03));
+    box-shadow: inset 0 0 0 1px rgba(244, 63, 94, 0.25);
+}
+
+.categoryBadgeDetail {
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.categorySeniorBadge {
+    background: rgba(244, 63, 94, 0.18);
+    color: #fb7185;
+    border: 1px solid rgba(244, 63, 94, 0.4);
+}
+
+.categoryAllBadge {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.lockedBadge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    background: rgba(244, 63, 94, 0.12);
+    color: #fb7185;
+    border: 1px solid rgba(244, 63, 94, 0.3);
+    border-radius: var(--radius-md);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: not-allowed;
 }
 
 .shiftInfo {

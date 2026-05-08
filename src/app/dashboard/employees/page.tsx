@@ -70,6 +70,8 @@ export default function EmployeesPage() {
                     <div className={styles.stat}><span className={styles.statValue}>{employees.filter(e => e.isActive).length}</span><span className={styles.statLabel}>Aktivních</span></div>
                     <div className={styles.stat}><span className={styles.statValue}>{employees.filter(e => e.role === 'admin').length}</span><span className={styles.statLabel}>Adminů</span></div>
                     <div className={styles.stat}><span className={styles.statValue}>{employees.filter(e => e.role === 'shift_manager').length}</span><span className={styles.statLabel}>Vedoucích</span></div>
+                    <div className={styles.stat}><span className={styles.statValue}>{employees.filter(e => e.role === 'brigadnik_senior').length}</span><span className={styles.statLabel}>Senior</span></div>
+                    <div className={styles.stat}><span className={styles.statValue}>{employees.filter(e => e.role === 'brigadnik_junior').length}</span><span className={styles.statLabel}>Junior</span></div>
                 </div>
             </div>
 
@@ -87,6 +89,8 @@ export default function EmployeesPage() {
                                     <div className={styles.employeeMeta}>
                                         {employee.role === 'admin' && <span className={styles.adminBadge}>Admin</span>}
                                         {employee.role === 'shift_manager' && <span className={styles.managerBadge}>Vedoucí</span>}
+                                        {employee.role === 'brigadnik_senior' && <span className={styles.seniorBadge}>Senior</span>}
+                                        {employee.role === 'brigadnik_junior' && <span className={styles.juniorBadge}>Junior</span>}
                                         {employee.position && <span className={styles.positionBadge}>{employee.position}</span>}
                                         {!employee.isActive && <span className={styles.inactiveBadge}>Neaktivní</span>}
                                     </div>
@@ -107,11 +111,15 @@ export default function EmployeesPage() {
                             <div className={styles.formGroup}>
                                 <label htmlFor="role">Role</label>
                                 <select id="role" value={editData.role} onChange={(e) => setEditData({ ...editData, role: e.target.value as UserRole })} disabled={selectedEmployee.uid === userProfile?.uid}>
-                                    <option value="employee">Zaměstnanec</option>
+                                    <option value="employee">Zaměstnanec (neutrální)</option>
+                                    <option value="brigadnik_junior">Brigádník junior</option>
+                                    <option value="brigadnik_senior">Brigádník senior</option>
                                     <option value="shift_manager">Vedoucí směny</option>
                                     <option value="admin">Admin</option>
                                 </select>
                                 {selectedEmployee.uid === userProfile?.uid && <span className={styles.hint}>Nemůžete změnit vlastní roli</span>}
+                                {editData.role === 'brigadnik_junior' && <span className={styles.hintInfo}>🆕 Může brát pouze směny v kategorii „Vše“ (junior i senior)</span>}
+                                {editData.role === 'brigadnik_senior' && <span className={styles.hintInfo}>⭐ Zaučený brigádník — může brát všechny směny včetně senior-only</span>}
                                 {editData.role === 'shift_manager' && <span className={styles.hintInfo}>💼 Může vytvářet a přiřazovat směny</span>}
                                 {editData.role === 'admin' && <span className={styles.hintWarning}>⚠️ Plný přístup ke všem funkcím</span>}
                             </div>

@@ -1,8 +1,15 @@
 // User roles
 // admin = full access
 // shift_manager = can create/assign shifts (vedoucí směny)
-// employee = basic access
-export type UserRole = 'admin' | 'shift_manager' | 'employee';
+// brigadnik_senior = zaučený brigádník — může brát i senior-only směny
+// brigadnik_junior = nový brigádník — může brát pouze směny kategorie "all"
+// employee = legacy/neutrální role (chová se jako senior z hlediska oprávnění brát směny)
+export type UserRole = 'admin' | 'shift_manager' | 'brigadnik_senior' | 'brigadnik_junior' | 'employee';
+
+// Shift category - determines who can sign up for a shift
+// senior_only = pouze brigadnik_senior (a admin / shift_manager / employee)
+// all         = libovolný brigádník (junior i senior)
+export type ShiftCategory = 'senior_only' | 'all';
 
 // User profile
 export interface UserProfile {
@@ -33,6 +40,7 @@ export interface Shift {
     startTime: string;
     endTime: string;
     position: string;
+    category?: ShiftCategory; // missing = 'all' (zpětná kompatibilita pro starší směny)
     status: ShiftStatus;
     assignedTo?: string;
     assignedToName?: string;

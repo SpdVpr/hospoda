@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState, useRef } from 'react';
 import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Shift, ShiftStatus, TaskPriority } from '@/types';
+import { Shift, ShiftStatus, ShiftCategory, TaskPriority } from '@/types';
 import styles from './page.module.css';
 
 interface ShiftTask {
@@ -35,7 +35,7 @@ const shiftTemplates: ShiftTemplate[] = [
 const positions = ['Barman / Barmanka', 'Číšník / Servírka', 'Kuchař'];
 
 export default function CalendarPage() {
-    const { userProfile, isAdmin } = useAuth();
+    const { userProfile, isAdmin, canTakeShiftCategory } = useAuth();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [shifts, setShifts] = useState<Shift[]>([]);
     const [loading, setLoading] = useState(true);
@@ -43,7 +43,7 @@ export default function CalendarPage() {
     const [selectedDayForDetail, setSelectedDayForDetail] = useState<string | null>(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState<ShiftTemplate | null>(null);
-    const [customShift, setCustomShift] = useState({ startTime: '16:00', endTime: '21:00', position: 'Číšník / Servírka', notes: '' });
+    const [customShift, setCustomShift] = useState<{ startTime: string; endTime: string; position: string; category: ShiftCategory; notes: string }>({ startTime: '16:00', endTime: '21:00', position: 'Číšník / Servírka', category: 'all', notes: '' });
     const [isSelectionMode, setIsSelectionMode] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [shiftTasks, setShiftTasks] = useState<ShiftTask[]>([]);
@@ -199,6 +199,7 @@ export default function CalendarPage() {
                     startTime,
                     endTime,
                     position: customShift.position,
+                    category: customShift.category,
                     notes: customShift.notes,
                     status: 'open' as ShiftStatus,
                     createdBy: userProfile.uid,
@@ -294,6 +295,10 @@ export default function CalendarPage() {
 
     const handleTakeShift = async (shift: Shift) => {
         if (!userProfile) return;
+        if (!canTakeShiftCategory(shift.category)) {
+            alert('Tato směna je pouze pro brigádníky senior.');
+            return;
+        }
         try {
             await updateDoc(doc(db, 'shifts', shift.id), {
                 status: 'assigned',
@@ -376,6 +381,7 @@ export default function CalendarPage() {
                     <span className={styles.legendItem}><span className={`${styles.legendBox} ${styles.openShift}`}></span> Volné směny</span>
                     <span className={styles.legendItem}><span className={`${styles.legendBox} ${styles.assignedShift}`}></span> Obsazené směny</span>
                     <span className={styles.legendItem}><span className={`${styles.legendBox} ${styles.myShift}`}></span> Moje směny</span>
+                    <span className={styles.legendItem}><span className={`${styles.legendBox} ${styles.seniorShift}`}></span> Pouze senior</span>
                 </div>
 
                 <div className={styles.calendar}>
@@ -415,11 +421,13 @@ export default function CalendarPage() {
                             ${shift.status === 'open' ? styles.shiftOpen : ''}
                             ${shift.status === 'assigned' && shift.assignedTo === userProfile?.uid ? styles.shiftMine : ''}
                             ${shift.status === 'assigned' && shift.assignedTo !== userProfile?.uid ? styles.shiftAssigned : ''}
+                            ${shift.category === 'senior_only' ? styles.shiftSeniorOnly : ''}
                           `}
-                                                    title={`${shift.startTime}-${shift.endTime} ${shift.position}${shift.assignedToName ? ` (${shift.assignedToName})` : ''}`}
+                                                    title={`${shift.startTime}-${shift.endTime} ${shift.position}${shift.category === 'senior_only' ? ' [SENIOR]' : ''}${shift.assignedToName ? ` (${shift.assignedToName})` : ''}`}
                                                 >
                                                     <span className={styles.shiftTime}>{shift.startTime}</span>
                                                     <span className={styles.shiftPos}>{shift.position.slice(0, 3)}</span>
+                                                    {shift.category === 'senior_only' && <span className={styles.shiftCatDot} aria-hidden="true">●</span>}
                                                 </div>
                                             ))}
                                             {dayShifts.length > 3 && (
@@ -459,11 +467,16 @@ export default function CalendarPage() {
                         <div className={styles.shiftsList}>
                             {getShiftsForDay(selectedDayForDetail).map(shift => {
                                 const shiftTasksList = shiftTasksMap[shift.id] || [];
+                                const isSeniorOnly = shift.category === 'senior_only';
+                                const allowedToTake = canTakeShiftCategory(shift.category);
                                 return (
-                                    <div key={shift.id} className={`${styles.shiftCard} ${shift.status === 'open' ? styles.open : styles.assigned}`}>
+                                    <div key={shift.id} className={`${styles.shiftCard} ${shift.status === 'open' ? styles.open : styles.assigned} ${isSeniorOnly ? styles.cardSeniorOnly : ''}`}>
                                         <div className={styles.shiftInfo}>
                                             <div className={styles.shiftHeader}>
                                                 <span className={styles.shiftTimeRange}>{shift.startTime} - {shift.endTime}</span>
+                                                <span className={`${styles.categoryBadgeDetail} ${isSeniorOnly ? styles.categorySeniorBadge : styles.categoryAllBadge}`}>
+                                                    {isSeniorOnly ? 'Senior only' : 'Vše'}
+                                                </span>
                                                 <span className={`${styles.shiftStatus} ${shift.status === 'open' ? styles.statusOpen : styles.statusAssigned}`}>
                                                     {shift.status === 'open' ? 'Volná' : 'Obsazená'}
                                                 </span>
@@ -535,8 +548,11 @@ export default function CalendarPage() {
                                                     + Úkol
                                                 </button>
                                             )}
-                                            {shift.status === 'open' && !isPast(shift.date) && (
+                                            {shift.status === 'open' && !isPast(shift.date) && allowedToTake && (
                                                 <button className={styles.takeBtn} onClick={() => handleTakeShift(shift)}>Vzít směnu</button>
+                                            )}
+                                            {shift.status === 'open' && !isPast(shift.date) && !allowedToTake && (
+                                                <span className={styles.lockedBadge} title="Tato směna je pouze pro brigádníky senior">🔒 Jen senior</span>
                                             )}
                                             {isAdmin && shift.status === 'assigned' && !isPast(shift.date) && (
                                                 <button className={styles.releaseBtn} onClick={() => handleReleaseShift(shift)}>Uvolnit</button>
@@ -622,6 +638,14 @@ export default function CalendarPage() {
                                 <label>Pozice</label>
                                 <select value={customShift.position} onChange={e => setCustomShift({ ...customShift, position: e.target.value })}>
                                     {positions.map(p => <option key={p} value={p}>{p}</option>)}
+                                </select>
+                            </div>
+
+                            <div className={styles.formGroup}>
+                                <label>Kategorie směny</label>
+                                <select value={customShift.category} onChange={e => setCustomShift({ ...customShift, category: e.target.value as ShiftCategory })}>
+                                    <option value="all">Kategorie 2 — všichni brigádníci (junior i senior)</option>
+                                    <option value="senior_only">Kategorie 1 — pouze brigádník senior</option>
                                 </select>
                             </div>
 

@@ -236,6 +236,68 @@
     border-left: 4px solid var(--accent-success);
 }
 
+/* Shift category visual distinction */
+.shiftCard.seniorOnly {
+    background: linear-gradient(135deg, rgba(244, 63, 94, 0.06) 0%, rgba(244, 63, 94, 0.02) 100%);
+    border-color: rgba(244, 63, 94, 0.35);
+}
+
+.shiftCard.seniorOnly:hover {
+    border-color: rgba(244, 63, 94, 0.6);
+}
+
+.shiftCard.seniorOnly.open {
+    border-left: 4px solid #f43f5e;
+}
+
+.shiftCard.allCategory.open {
+    border-left: 4px solid var(--accent-success);
+}
+
+.categoryBadge {
+    display: inline-block;
+    margin-left: var(--spacing-sm);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    vertical-align: middle;
+}
+
+.categorySenior {
+    background: rgba(244, 63, 94, 0.18);
+    color: #fb7185;
+    border: 1px solid rgba(244, 63, 94, 0.4);
+}
+
+.categoryAll {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.lockedBadge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    background: rgba(244, 63, 94, 0.12);
+    color: #fb7185;
+    border: 1px solid rgba(244, 63, 94, 0.3);
+    border-radius: var(--radius-md);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: not-allowed;
+}
+
+@media (min-width: 640px) {
+    .lockedBadge {
+        font-size: 0.75rem;
+        padding: var(--spacing-xs) var(--spacing-sm);
+    }
+}
+
 .shiftTop {
     display: flex;
     align-items: center;

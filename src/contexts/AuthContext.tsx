@@ -13,7 +13,7 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, googleProvider } from '@/lib/firebase';
-import { UserProfile, UserRole } from '@/types';
+import { UserProfile, UserRole, ShiftCategory } from '@/types';
 
 interface AuthContextType {
     user: User | null;
@@ -28,6 +28,8 @@ interface AuthContextType {
     isAdmin: boolean;
     isShiftManager: boolean;
     canManageShifts: boolean; // admin OR shift_manager
+    isJunior: boolean;
+    canTakeShiftCategory: (category: ShiftCategory | undefined) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -255,6 +257,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const isAdmin = userProfile?.role === 'admin';
     const isShiftManager = userProfile?.role === 'shift_manager';
     const canManageShifts = isAdmin || isShiftManager;
+    const isJunior = userProfile?.role === 'brigadnik_junior';
+
+    // Junior may only take 'all' shifts; everyone else (senior, employee, admin, shift_manager) may take any.
+    const canTakeShiftCategory = (category: ShiftCategory | undefined): boolean => {
+        if (!userProfile) return false;
+        if (userProfile.role === 'brigadnik_junior') return category !== 'senior_only';
+        return true;
+    };
 
     return (
         <AuthContext.Provider
@@ -271,6 +281,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 isAdmin,
                 isShiftManager,
                 canManageShifts,
+                isJunior,
+                canTakeShiftCategory,
             }}
         >
             {children}

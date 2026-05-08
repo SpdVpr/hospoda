@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState, useRef } from 'react';
 import { collection, query, where, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Shift, ShiftStatus, UserProfile } from '@/types';
+import { Shift, ShiftStatus, ShiftCategory, UserProfile } from '@/types';
 import styles from './page.module.css';
 
 interface ShiftFormData {
@@ -12,6 +12,7 @@ interface ShiftFormData {
     startTime: string;
     endTime: string;
     position: string;
+    category: ShiftCategory;
     notes: string;
 }
 
@@ -20,11 +21,12 @@ const initialFormData: ShiftFormData = {
     startTime: '16:00',
     endTime: '21:00',
     position: 'Číšník / Servírka',
+    category: 'all',
     notes: '',
 };
 
 export default function ShiftsPage() {
-    const { userProfile, isAdmin, canManageShifts } = useAuth();
+    const { userProfile, isAdmin, canManageShifts, canTakeShiftCategory } = useAuth();
     const [shifts, setShifts] = useState<Shift[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -78,6 +80,10 @@ export default function ShiftsPage() {
         if (!assigningShift || !selectedEmployeeId || !userProfile) return;
         const selectedEmployee = employees.find(e => e.uid === selectedEmployeeId);
         if (!selectedEmployee) return;
+
+        if (assigningShift.category === 'senior_only' && selectedEmployee.role === 'brigadnik_junior') {
+            if (!confirm(`${selectedEmployee.displayName} je brigádník junior, ale směna je v kategorii "pouze senior". Opravdu přiřadit?`)) return;
+        }
 
         try {
             await updateDoc(doc(db, 'shifts', assigningShift.id), {
@@ -154,18 +160,23 @@ export default function ShiftsPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        ${futureShifts.map(shift => `
+                        ${futureShifts.map(shift => {
+                const catLabel = shift.category === 'senior_only'
+                    ? '<span style="background:#fde68a;color:#92400e;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;margin-left:6px;">SENIOR</span>'
+                    : '';
+                return `
                             <tr>
                                 <td>${formatDate(shift.date)}</td>
                                 <td>${shift.startTime} - ${shift.endTime}</td>
-                                <td class="position">${shift.position}</td>
+                                <td class="position">${shift.position}${catLabel}</td>
                                 <td>
                                     ${shift.assignedToName
-                ? `<span class="assigned-name">${shift.assignedToName}</span>`
-                : '<span class="empty-slot"></span>'}
+                        ? `<span class="assigned-name">${shift.assignedToName}</span>`
+                        : '<span class="empty-slot"></span>'}
                                 </td>
                             </tr>
-                        `).join('')}
+                        `;
+            }).join('')}
                     </tbody>
                 </table>
             </body>
@@ -182,7 +193,7 @@ export default function ShiftsPage() {
     const handleOpenModal = (shift?: Shift) => {
         if (shift) {
             setEditingShift(shift);
-            setFormData({ date: shift.date, startTime: shift.startTime, endTime: shift.endTime, position: shift.position, notes: shift.notes || '' });
+            setFormData({ date: shift.date, startTime: shift.startTime, endTime: shift.endTime, position: shift.position, category: shift.category || 'all', notes: shift.notes || '' });
         } else {
             setEditingShift(null);
             setFormData(initialFormData);
@@ -213,6 +224,10 @@ export default function ShiftsPage() {
 
     const handleTakeShift = async (shift: Shift) => {
         if (!userProfile) return;
+        if (!canTakeShiftCategory(shift.category)) {
+            alert('Tato směna je pouze pro brigádníky senior.');
+            return;
+        }
         try {
             await updateDoc(doc(db, 'shifts', shift.id), { status: 'assigned', assignedTo: userProfile.uid, assignedToName: userProfile.displayName, updatedAt: serverTimestamp() });
             fetchShifts();
@@ -285,15 +300,23 @@ export default function ShiftsPage() {
                 </div>
             ) : (
                 <div className={styles.shiftsList}>
-                    {filteredShifts.map((shift) => (
-                        <div key={shift.id} className={`${styles.shiftCard} ${isPast(shift.date) ? styles.past : ''} ${shift.status === 'open' ? styles.open : ''}`}>
+                    {filteredShifts.map((shift) => {
+                        const isSeniorOnly = shift.category === 'senior_only';
+                        const allowedToTake = canTakeShiftCategory(shift.category);
+                        return (
+                        <div key={shift.id} className={`${styles.shiftCard} ${isPast(shift.date) ? styles.past : ''} ${shift.status === 'open' ? styles.open : ''} ${isSeniorOnly ? styles.seniorOnly : styles.allCategory}`}>
                             <div className={styles.shiftDate}>
                                 <span className={styles.dateDay}>{new Date(shift.date).getDate()}</span>
                                 <span className={styles.dateMonth}>{new Date(shift.date).toLocaleDateString('cs-CZ', { month: 'short' })}</span>
                             </div>
                             <div className={styles.shiftInfo}>
                                 <div className={styles.shiftTime}>{shift.startTime} - {shift.endTime}</div>
-                                <div className={styles.shiftPosition}>{shift.position}</div>
+                                <div className={styles.shiftPosition}>
+                                    {shift.position}
+                                    <span className={`${styles.categoryBadge} ${isSeniorOnly ? styles.categorySenior : styles.categoryAll}`}>
+                                        {isSeniorOnly ? 'Senior' : 'Vše'}
+                                    </span>
+                                </div>
                                 {shift.assignedToName && <div className={styles.shiftAssignee}>{shift.assignedToName}</div>}
                             </div>
                             <div className={styles.shiftStatus}>
@@ -301,8 +324,11 @@ export default function ShiftsPage() {
                                 {shift.status === 'assigned' && <span className={styles.statusAssigned}>Obsazená</span>}
                             </div>
                             <div className={styles.shiftActions}>
-                                {shift.status === 'open' && !isPast(shift.date) && (
+                                {shift.status === 'open' && !isPast(shift.date) && allowedToTake && (
                                     <button className={styles.takeBtn} onClick={() => handleTakeShift(shift)}>Vzít</button>
+                                )}
+                                {shift.status === 'open' && !isPast(shift.date) && !allowedToTake && (
+                                    <span className={styles.lockedBadge} title="Tato směna je pouze pro brigádníky senior">🔒 Jen senior</span>
                                 )}
                                 {canManageShifts && shift.status === 'open' && !isPast(shift.date) && (
                                     <button className={styles.assignBtn} onClick={() => handleOpenAssignModal(shift)}>Přiřadit</button>
@@ -318,7 +344,8 @@ export default function ShiftsPage() {
                                 )}
                             </div>
                         </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
 
@@ -350,6 +377,13 @@ export default function ShiftsPage() {
                                     <option>Barman / Barmanka</option>
                                     <option>Číšník / Servírka</option>
                                     <option>Kuchař</option>
+                                </select>
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label htmlFor="category">Kategorie směny</label>
+                                <select id="category" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value as ShiftCategory })}>
+                                    <option value="all">Kategorie 2 — všichni brigádníci (junior i senior)</option>
+                                    <option value="senior_only">Kategorie 1 — pouze brigádník senior</option>
                                 </select>
                             </div>
                             <div className={styles.formGroup}>
