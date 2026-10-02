@@ -16,6 +16,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
     { href: '/dashboard', label: 'Přehled', icon: '' },
+    { href: '/dashboard/reservations', label: 'Rezervace', icon: '' },
     { href: '/dashboard/shifts', label: 'Směny', icon: '' },
     { href: '/dashboard/calendar', label: 'Kalendář', icon: '' },
     { href: '/dashboard/tasks', label: 'Úkoly', icon: '' },
