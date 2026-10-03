@@ -1,8 +1,9 @@
 'use client';
 
 // DEV ONLY – one-off migration of the staff app data from Firebase to Supabase.
-// 1) sign in to the new app as admin (Supabase), 2) sign in to the old Firebase app,
-// 3) "Převést" exports Firestore, imports it (RPC team_import) and copies INSTAVES photos.
+// 1) sign in to the new app as admin (Supabase), 2) "Převést" exports Firestore
+// (server-side as the old shared admin, or as a manually signed-in Firebase user),
+// imports it (RPC team_import) and copies INSTAVES photos to Supabase Storage.
 // Remove this page, /api/migrace and src/lib/firebase.ts once the migration is done.
 
 import { useState } from 'react';
@@ -14,7 +15,7 @@ import { getSupabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 
 const COLLECTIONS = ['users', 'shifts', 'tasks', 'announcements', 'gallery'] as const;
-type Export = Record<(typeof COLLECTIONS)[number], Record<string, unknown>[]>;
+type Export = Record<string, Record<string, unknown>[]>;
 
 /** Firestore Timestamps → ISO strings, recursively. */
 function plain(value: unknown): unknown {
@@ -56,23 +57,39 @@ export default function MigrationPage() {
         }
     };
 
+    /** Export as the manually signed-in Firebase user (fallback). */
+    const exportInBrowser = async (): Promise<Export> => {
+        const data: Export = {};
+        for (const name of COLLECTIONS) {
+            try {
+                const snap = await getDocs(collection(fbDb, name));
+                data[name] = snap.docs.map((d) => ({ ...(plain(d.data()) as Record<string, unknown>), [name === 'users' ? 'uid' : 'id']: d.id }));
+            } catch (err) {
+                data[name] = [];
+                say(`Firebase ${name}: NELZE PŘEČÍST (${err instanceof Error ? err.message : err})`);
+            }
+        }
+        return data;
+    };
+
+    /** Export on the dev server as the old shared admin account. */
+    const exportOnServer = async (): Promise<Export> => {
+        const { data: session } = await getSupabase().auth.getSession();
+        const res = await fetch('/api/migrace/export', { headers: { Authorization: `Bearer ${session.session?.access_token ?? ''}` } });
+        const body = (await res.json()) as { data?: Export; errors?: Record<string, string>; error?: string };
+        if (!res.ok || !body.data) throw new Error(body.error ?? `Export selhal (${res.status})`);
+        for (const [name, message] of Object.entries(body.errors ?? {})) say(`Firebase ${name}: NELZE PŘEČÍST (${message})`);
+        return body.data;
+    };
+
     const migrate = async () => {
         setBusy(true);
         setLog([]);
         const supabase = getSupabase();
         try {
             // 1) Export
-            const data = {} as Export;
-            for (const name of COLLECTIONS) {
-                try {
-                    const snap = await getDocs(collection(fbDb, name));
-                    data[name] = snap.docs.map((d) => ({ ...(plain(d.data()) as Record<string, unknown>), [name === 'users' ? 'uid' : 'id']: d.id }));
-                    say(`Firebase ${name}: ${data[name].length}`);
-                } catch (err) {
-                    data[name] = [];
-                    say(`Firebase ${name}: NELZE PŘEČÍST (${err instanceof Error ? err.message : err})`);
-                }
-            }
+            const data = fbUser ? await exportInBrowser() : await exportOnServer();
+            for (const name of COLLECTIONS) say(`Firebase ${name}: ${data[name]?.length ?? 0}`);
 
             // 2) Import
             const { data: result, error } = await supabase.rpc('team_import', { p_data: data });
@@ -131,23 +148,28 @@ export default function MigrationPage() {
             <section style={box}>
                 <h2>2. Stará aplikace (Firebase)</h2>
                 {fbUser ? (
-                    <p>✓ Přihlášen do Firebase: {fbUser} <button style={{ ...btn, background: '#888', marginLeft: 8 }} onClick={() => signOut(fbAuth).then(() => setFbUser(null))}>Odhlásit</button></p>
+                    <p>✓ Data se načtou jako {fbUser} <button style={{ ...btn, background: '#888', marginLeft: 8 }} onClick={() => signOut(fbAuth).then(() => setFbUser(null))}>Zrušit</button></p>
                 ) : (
                     <>
-                        <p style={{ marginBottom: 12 }}>Účtem, který má ve staré aplikaci roli admin.</p>
-                        <button style={btn} onClick={() => firebaseLogin(true)}>Přihlásit přes Google</button>
-                        <form style={{ marginTop: 12 }} onSubmit={(e) => { e.preventDefault(); firebaseLogin(false); }}>
-                            <input style={input} type="email" placeholder="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                            <input style={input} type="password" placeholder="heslo" value={password} onChange={(e) => setPassword(e.target.value)} />
-                            <button style={btn} type="submit">Přihlásit e-mailem</button>
-                        </form>
+                        <p>Není potřeba nic dělat – data se načtou přes původní admin účet aplikace (heslo z <code>.env.local</code>).</p>
+                        <details style={{ marginTop: 12 }}>
+                            <summary style={{ cursor: 'pointer' }}>Nebo se přihlásit do Firebase ručně</summary>
+                            <div style={{ marginTop: 12 }}>
+                                <button style={btn} onClick={() => firebaseLogin(true)}>Přihlásit přes Google</button>
+                                <form style={{ marginTop: 12 }} onSubmit={(e) => { e.preventDefault(); firebaseLogin(false); }}>
+                                    <input style={input} type="email" placeholder="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                                    <input style={input} type="password" placeholder="heslo" value={password} onChange={(e) => setPassword(e.target.value)} />
+                                    <button style={btn} type="submit">Přihlásit e-mailem</button>
+                                </form>
+                            </div>
+                        </details>
                     </>
                 )}
             </section>
 
             <section style={box}>
                 <h2>3. Převod</h2>
-                <button style={{ ...btn, opacity: !isAdmin || !fbUser || busy ? 0.5 : 1 }} disabled={!isAdmin || !fbUser || busy} onClick={migrate}>
+                <button style={{ ...btn, opacity: !isAdmin || busy ? 0.5 : 1 }} disabled={!isAdmin || busy} onClick={migrate}>
                     {busy ? 'Převádím…' : 'Převést'}
                 </button>
                 {log.length > 0 && (
