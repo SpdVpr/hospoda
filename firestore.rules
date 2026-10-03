@@ -1,0 +1,140 @@
+rules_version = '2';
+
+// Firestore security rules for the staff app (Firebase project hospoda-5ccde).
+// Deploy: Firebase console → Firestore → Rules (paste + Publish),
+// or `npx firebase-tools deploy --only firestore:rules`.
+//
+// Roles live only in users/{uid}.role ('admin' | 'shift_manager' | 'employee').
+// A user can never set or raise their own role, hourlyRate, adminNotes,
+// position, startDate or isActive – only an admin can (Zaměstnanci page).
+// Deactivated users (isActive == false) can only see their own profile.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function profilePath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
+    function profile() {
+      return get(profilePath()).data;
+    }
+
+    // Signed in, has a profile and is not deactivated.
+    function isMember() {
+      return signedIn()
+        && exists(profilePath())
+        && profile().get('isActive', true) == true;
+    }
+
+    function hasRole(roles) {
+      return isMember() && profile().get('role', 'employee') in roles;
+    }
+
+    function isAdmin() {
+      return hasRole(['admin']);
+    }
+
+    function canManageShifts() {
+      return hasRole(['admin', 'shift_manager']);
+    }
+
+    function changedOnly(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+
+    function validName(name) {
+      return name is string && name.size() > 0 && name.size() <= 100;
+    }
+
+    match /users/{uid} {
+      // Own profile, or the whole team for admins / shift managers
+      // (Zaměstnanci page, assigning shifts).
+      allow read: if (signedIn() && request.auth.uid == uid) || canManageShifts();
+
+      // First sign-in (AuthContext.fetchOrCreateProfile): only a plain,
+      // active employee profile with the user's own uid and e-mail.
+      allow create: if isAdmin() || (
+        signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(
+          ['uid', 'email', 'displayName', 'photoURL', 'role', 'isActive', 'createdAt', 'updatedAt'])
+        && request.resource.data.uid == uid
+        && request.resource.data.email == request.auth.token.get('email', '')
+        && request.resource.data.role == 'employee'
+        && request.resource.data.isActive == true
+        && validName(request.resource.data.displayName)
+      );
+
+      // Admins edit anyone; a user edits only personal details (Můj profil).
+      allow update: if isAdmin() || (
+        signedIn()
+        && request.auth.uid == uid
+        && changedOnly(['displayName', 'phone', 'address', 'birthDate', 'photoURL', 'updatedAt'])
+        && validName(request.resource.data.displayName)
+      );
+
+      allow delete: if isAdmin() && request.auth.uid != uid;
+    }
+
+    match /shifts/{shiftId} {
+      allow read: if isMember();
+      allow create, delete: if canManageShifts();
+
+      // Managers edit anything; an employee may only take an open shift for themselves.
+      allow update: if canManageShifts() || (
+        isMember()
+        && resource.data.status == 'open'
+        && request.resource.data.status == 'assigned'
+        && request.resource.data.assignedTo == request.auth.uid
+        && changedOnly(['status', 'assignedTo', 'assignedToName', 'updatedAt'])
+      );
+    }
+
+    match /tasks/{taskId} {
+      allow read: if isMember();
+      allow create, delete: if isAdmin();
+
+      // Admins edit anything; anyone in the team may tick a task done / undone.
+      allow update: if isAdmin() || (
+        isMember()
+        && changedOnly(['status', 'completedAt', 'completedBy', 'updatedAt'])
+        && request.resource.data.status in ['pending', 'in_progress', 'completed']
+        && request.resource.data.get('completedBy', null) in [null, request.auth.uid]
+      );
+    }
+
+    match /announcements/{announcementId} {
+      allow read: if isMember();
+      allow write: if isAdmin();
+    }
+
+    match /gallery/{photoId} {
+      allow read: if isMember();
+
+      allow create: if isMember()
+        && request.resource.data.uploadedBy == request.auth.uid
+        && request.resource.data.likes == [];
+
+      // Likes: a user may add or remove only their own uid.
+      allow update: if isAdmin() || (
+        isMember()
+        && changedOnly(['likes'])
+        && request.resource.data.likes is list
+        && request.resource.data.likes.toSet()
+             .difference(resource.data.get('likes', []).toSet())
+             .hasOnly([request.auth.uid])
+        && resource.data.get('likes', []).toSet()
+             .difference(request.resource.data.likes.toSet())
+             .hasOnly([request.auth.uid])
+      );
+
+      allow delete: if isAdmin() || (isMember() && resource.data.uploadedBy == request.auth.uid);
+    }
+
+    // Everything else is denied (no match = no access).
+  }
+}

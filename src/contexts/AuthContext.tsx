@@ -13,7 +13,7 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, googleProvider } from '@/lib/firebase';
-import { UserProfile, UserRole } from '@/types';
+import { UserProfile } from '@/types';
 
 interface AuthContextType {
     user: User | null;
@@ -44,36 +44,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const profileRef = doc(db, 'users', firebaseUser.uid);
             const profileSnap = await getDoc(profileRef);
 
-            // Check if this is the special admin user
-            const isAdminUser = firebaseUser.email === 'admin@hospoda.local';
-
             if (profileSnap.exists()) {
-                const existingProfile = { ...profileSnap.data(), uid: firebaseUser.uid } as UserProfile;
-
-                // ALWAYS enforce admin role for admin@hospoda.local
-                if (isAdminUser && existingProfile.role !== 'admin') {
-                    await setDoc(profileRef, {
-                        ...existingProfile,
-                        role: 'admin',
-                        displayName: 'Administrátor',
-                        updatedAt: serverTimestamp(),
-                    }, { merge: true });
-                    return { ...existingProfile, role: 'admin', displayName: 'Administrátor' };
-                }
-
-                return existingProfile;
+                return { ...profileSnap.data(), uid: firebaseUser.uid } as UserProfile;
             }
 
-            // Create new profile for first-time users
-            // Only admin@hospoda.local gets admin role, everyone else is employee
-            const userRole = isAdminUser ? 'admin' : 'employee';
-
+            // Create new profile for first-time users – always as employee.
+            // Admin role is granted only by another admin (Zaměstnanci page);
+            // firestore.rules reject any other role or extra fields here.
             // Build profile object — IMPORTANT: exclude undefined values (Firestore rejects them)
             const newProfile: Record<string, any> = {
                 uid: firebaseUser.uid,
                 email: firebaseUser.email || '',
-                displayName: isAdminUser ? 'Administrátor' : (firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Uživatel'),
-                role: userRole,
+                displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Uživatel',
+                role: 'employee',
                 isActive: true,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
@@ -150,53 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const signInWithEmail = async (email: string, password: string) => {
         try {
             setError(null);
-
-            // Special admin login: if email is "admin", convert to admin@hospoda.local
-            let loginEmail = email;
-            let loginPassword = password;
-
-            if (email.toLowerCase() === 'admin') {
-                const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
-
-                if (!adminPassword) {
-                    throw new Error('Admin heslo není nakonfigurované v .env.local');
-                }
-
-                if (password !== adminPassword) {
-                    throw new Error('Nesprávné admin heslo');
-                }
-
-                loginEmail = 'admin@hospoda.local';
-                loginPassword = adminPassword;
-
-                // Try to sign in, if user doesn't exist, create it
-                try {
-                    await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
-                } catch (signInError: any) {
-                    if (signInError.code === 'auth/user-not-found' || signInError.code === 'auth/invalid-credential') {
-                        // Create admin user if it doesn't exist
-                        const result = await createUserWithEmailAndPassword(auth, loginEmail, loginPassword);
-                        await updateProfile(result.user, { displayName: 'Administrátor' });
-
-                        // Force admin role for this user
-                        const profileRef = doc(db, 'users', result.user.uid);
-                        await setDoc(profileRef, {
-                            uid: result.user.uid,
-                            email: loginEmail,
-                            displayName: 'Administrátor',
-                            role: 'admin',
-                            isActive: true,
-                            createdAt: serverTimestamp(),
-                            updatedAt: serverTimestamp(),
-                        });
-                    } else {
-                        throw signInError;
-                    }
-                }
-                return;
-            }
-
-            await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
+            await signInWithEmailAndPassword(auth, email, password);
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Chyba při přihlášení';
             setError(message);

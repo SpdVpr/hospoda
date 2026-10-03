@@ -166,21 +166,18 @@ export default function LoginPage() {
 
                         <div className={styles.formGroup}>
                             <label htmlFor="email" className={styles.label}>
-                                {mode === 'login' ? 'Email nebo login' : 'Email'}
+                                Email
                             </label>
                             <input
-                                type={mode === 'register' ? 'email' : 'text'}
+                                type="email"
                                 id="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 className={styles.input}
-                                placeholder={mode === 'login' ? 'admin nebo vas@email.cz' : 'vas@email.cz'}
+                                placeholder="vas@email.cz"
                                 required
                                 disabled={isLoading}
                             />
-                            {mode === 'login' && (
-                                <p className={styles.hint}>Pro admin přístup zadejte: admin</p>
-                            )}
                         </div>
 
                         <div className={styles.formGroup}>
