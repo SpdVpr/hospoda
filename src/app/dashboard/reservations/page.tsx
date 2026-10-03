@@ -2,24 +2,13 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useCallback, useEffect, useState } from 'react';
+import { listReservations, type Reservation } from '@/lib/data';
 import styles from './page.module.css';
 
-// Reservations come from the public website (hospodavesnice.cz, Supabase).
-// The website verifies the Firebase ID token and an allow-list of e-mails.
-const WEB_URL = (process.env.NEXT_PUBLIC_WEB_URL || 'https://www.hospodavesnice.cz').replace(/\/$/, '');
+// Reservations from the public website (same Supabase project). Only people whose
+// e-mail is on the website admin allow-list may read them (team_reservations).
 
-interface Reservation {
-    time: string;
-    party_size: number;
-    name: string;
-    phone: string;
-    status: 'pending' | 'confirmed' | 'seated';
-    table_label: string | null;
-    note: string | null;
-    internal_note: string | null;
-}
-
-const STATUS_LABELS: Record<Reservation['status'], string> = {
+const STATUS_LABELS: Record<string, string> = {
     pending: 'Čeká na potvrzení',
     confirmed: 'Potvrzeno',
     seated: 'Dorazili',
@@ -52,23 +41,12 @@ export default function ReservationsPage() {
         setLoading(true);
         setError(null);
         try {
-            const token = await user.getIdToken();
-            const res = await fetch(`${WEB_URL}/api/staff/reservations?date=${date}`, {
-                headers: { Authorization: `Bearer ${token}` },
-                cache: 'no-store',
-            });
-            if (res.status === 403) {
-                setError('Váš e-mail zatím nemá přístup k rezervacím. Požádejte vedoucího, ať vás přidá v administraci webu (Uživatelé → role Obsluha).');
-                setItems([]);
-            } else if (!res.ok) {
-                setError('Rezervace se teď nepodařilo načíst. Zkuste to prosím za chvíli.');
-                setItems([]);
-            } else {
-                const data = await res.json();
-                setItems(data.reservations ?? []);
-            }
-        } catch {
-            setError('Nepodařilo se spojit s webem. Zkontrolujte připojení.');
+            setItems(await listReservations(date));
+        } catch (err) {
+            setItems([]);
+            setError(err instanceof Error && /NOT_ALLOWED/.test(err.message)
+                ? 'Váš e-mail zatím nemá přístup k rezervacím. Požádejte vedoucího, ať vás přidá v administraci webu (Uživatelé → role Obsluha).'
+                : 'Rezervace se teď nepodařilo načíst. Zkuste to prosím za chvíli.');
         } finally {
             setLoading(false);
         }

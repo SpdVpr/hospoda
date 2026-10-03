@@ -6,6 +6,21 @@ import styles from './LoginPage.module.css';
 
 type AuthMode = 'login' | 'register';
 
+// Apple sign-in needs an Apple Developer account configured in Supabase Auth.
+const APPLE_LOGIN = process.env.NEXT_PUBLIC_APPLE_LOGIN === '1';
+
+/** Supabase Auth error → Czech message. */
+function authMessage(message: string): string {
+    if (/invalid login credentials/i.test(message)) return 'Nesprávný email nebo heslo';
+    if (/email not confirmed/i.test(message)) return 'Email ještě není potvrzený – klikněte na odkaz, který jsme vám poslali.';
+    if (/already registered|already exists/i.test(message)) return 'Email je již registrován';
+    if (/password should be|weak password/i.test(message)) return 'Heslo musí mít alespoň 6 znaků';
+    if (/invalid.*email|unable to validate email/i.test(message)) return 'Neplatný formát emailu';
+    if (/provider is not enabled|unsupported provider/i.test(message)) return 'Tento způsob přihlášení zatím není zapnutý.';
+    if (/rate limit/i.test(message)) return 'Příliš mnoho pokusů, zkuste to prosím za chvíli.';
+    return message;
+}
+
 export default function LoginPage() {
     const [mode, setMode] = useState<AuthMode>('login');
     const [email, setEmail] = useState('');
@@ -30,23 +45,13 @@ export default function LoginPage() {
                     setIsLoading(false);
                     return;
                 }
-                await signUpWithEmail(email, password, displayName);
+                const needsConfirmation = await signUpWithEmail(email, password, displayName);
+                if (needsConfirmation) {
+                    setError('Hotovo! Poslali jsme vám email s odkazem pro potvrzení účtu.');
+                }
             }
         } catch (err) {
-            const message = err instanceof Error ? err.message : 'Došlo k chybě';
-            if (message.includes('invalid-credential') || message.includes('wrong-password')) {
-                setError('Nesprávný email nebo heslo');
-            } else if (message.includes('user-not-found')) {
-                setError('Uživatel s tímto emailem neexistuje');
-            } else if (message.includes('email-already-in-use')) {
-                setError('Email je již registrován');
-            } else if (message.includes('weak-password')) {
-                setError('Heslo musí mít alespoň 6 znaků');
-            } else if (message.includes('invalid-email')) {
-                setError('Neplatný formát emailu');
-            } else {
-                setError(message);
-            }
+            setError(authMessage(err instanceof Error ? err.message : 'Došlo k chybě'));
         } finally {
             setIsLoading(false);
         }
@@ -58,12 +63,7 @@ export default function LoginPage() {
         try {
             await signInWithGoogle();
         } catch (err) {
-            const message = err instanceof Error ? err.message : 'Chyba při přihlášení přes Google';
-            if (message.includes('popup-closed')) {
-                setError('Přihlašovací okno bylo zavřeno');
-            } else {
-                setError(message);
-            }
+            setError(authMessage(err instanceof Error ? err.message : 'Chyba při přihlášení přes Google'));
         } finally {
             setIsLoading(false);
         }
@@ -75,14 +75,7 @@ export default function LoginPage() {
         try {
             await signInWithApple();
         } catch (err) {
-            const message = err instanceof Error ? err.message : 'Chyba při přihlášení přes Apple';
-            if (message.includes('popup-closed')) {
-                setError('Přihlašovací okno bylo zavřeno');
-            } else if (message.includes('popup-blocked')) {
-                setError('Pop-up okno bylo zablokováno. Povolte pop-up okna.');
-            } else {
-                setError(message);
-            }
+            setError(authMessage(err instanceof Error ? err.message : 'Chyba při přihlášení přes Apple'));
         } finally {
             setIsLoading(false);
         }
@@ -128,6 +121,7 @@ export default function LoginPage() {
                             Google
                         </button>
 
+                        {APPLE_LOGIN && (
                         <button
                             className={styles.appleBtn}
                             onClick={handleAppleLogin}
@@ -139,6 +133,7 @@ export default function LoginPage() {
                             </svg>
                             Apple
                         </button>
+                        )}
                     </div>
 
                     <div className={styles.divider}>

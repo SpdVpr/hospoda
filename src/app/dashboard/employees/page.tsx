@@ -2,8 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState } from 'react';
-import { collection, query, orderBy, getDocs, updateDoc, deleteDoc, doc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { deleteMember, listMembers, updateMember } from '@/lib/data';
 import { UserProfile, UserRole } from '@/types';
 import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
@@ -22,9 +21,7 @@ export default function EmployeesPage() {
 
     const fetchEmployees = async () => {
         try {
-            const usersQuery = query(collection(db, 'users'), orderBy('displayName', 'asc'));
-            const usersSnap = await getDocs(usersQuery);
-            setEmployees(usersSnap.docs.map(doc => ({ ...doc.data(), uid: doc.id })) as UserProfile[]);
+            setEmployees(await listMembers());
         } catch (error) { console.error('Error fetching employees:', error); }
         finally { setLoading(false); }
     };
@@ -40,7 +37,7 @@ export default function EmployeesPage() {
         if (!selectedEmployee) return;
         setSaving(true);
         try {
-            await updateDoc(doc(db, 'users', selectedEmployee.uid), { ...editData, updatedAt: new Date() });
+            await updateMember(selectedEmployee.uid, editData);
             fetchEmployees(); setSelectedEmployee(null);
         } catch (error) { console.error('Error updating employee:', error); }
         finally { setSaving(false); }
@@ -51,7 +48,7 @@ export default function EmployeesPage() {
         if (!confirm(`Opravdu chcete smazat zaměstnance ${selectedEmployee.displayName}? Tato akce je nevratná!`)) return;
         setDeleting(true);
         try {
-            await deleteDoc(doc(db, 'users', selectedEmployee.uid));
+            await deleteMember(selectedEmployee.uid);
             fetchEmployees(); setSelectedEmployee(null);
         } catch (error) { console.error('Error deleting employee:', error); }
         finally { setDeleting(false); }

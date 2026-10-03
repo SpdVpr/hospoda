@@ -6,7 +6,8 @@ export type UserRole = 'admin' | 'shift_manager' | 'employee';
 
 // User profile
 export interface UserProfile {
-    uid: string;
+    uid: string; // team member id (Supabase team_members.id)
+    userId?: string; // Supabase auth user id
     email: string;
     displayName: string;
     photoURL?: string;

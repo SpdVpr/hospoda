@@ -2,14 +2,13 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect } from 'react';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { updateOwnProfile } from '@/lib/data';
 import styles from './page.module.css';
 
 interface ProfileFormData { displayName: string; phone: string; address: string; birthDate: string; }
 
 export default function ProfilePage() {
-    const { userProfile, user } = useAuth();
+    const { userProfile, user, refreshProfile } = useAuth();
     const [formData, setFormData] = useState<ProfileFormData>({ displayName: '', phone: '', address: '', birthDate: '' });
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
@@ -23,7 +22,8 @@ export default function ProfilePage() {
         if (!userProfile) return;
         setSaving(true); setSaved(false);
         try {
-            await updateDoc(doc(db, 'users', userProfile.uid), { ...formData, updatedAt: serverTimestamp() });
+            await updateOwnProfile(userProfile.uid, formData);
+            await refreshProfile();
             setSaved(true); setTimeout(() => setSaved(false), 3000);
         } catch (error) { console.error('Error updating profile:', error); }
         finally { setSaving(false); }
@@ -68,8 +68,8 @@ export default function ProfilePage() {
                     <h3 className={styles.cardTitle}>Informace o účtu</h3>
                     <div className={styles.infoList}>
                         <div className={styles.infoItem}><span className={styles.infoLabel}>Email</span><span className={styles.infoValue}>{userProfile?.email}</span></div>
-                        <div className={styles.infoItem}><span className={styles.infoLabel}>ID uživatele</span><span className={styles.infoValue}>{user?.uid}</span></div>
-                        <div className={styles.infoItem}><span className={styles.infoLabel}>Přihlášení</span><span className={styles.infoValue}>{user?.providerData[0]?.providerId === 'google.com' ? 'Google' : user?.providerData[0]?.providerId === 'apple.com' ? 'Apple' : 'Email a heslo'}</span></div>
+                        <div className={styles.infoItem}><span className={styles.infoLabel}>ID uživatele</span><span className={styles.infoValue}>{user?.id}</span></div>
+                        <div className={styles.infoItem}><span className={styles.infoLabel}>Přihlášení</span><span className={styles.infoValue}>{user?.app_metadata?.provider === 'google' ? 'Google' : user?.app_metadata?.provider === 'apple' ? 'Apple' : 'Email a heslo'}</span></div>
                         <div className={styles.infoItem}><span className={styles.infoLabel}>Stav</span><span className={`${styles.infoValue} ${userProfile?.isActive ? styles.active : styles.inactive}`}>{userProfile?.isActive ? '✓ Aktivní' : '✕ Neaktivní'}</span></div>
                     </div>
                     <div className={styles.infoNote}><p>💡 Pro změnu emailu nebo hesla kontaktujte administrátora.</p></div>

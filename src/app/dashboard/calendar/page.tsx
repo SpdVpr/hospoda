@@ -2,9 +2,8 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState, useRef } from 'react';
-import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { Shift, ShiftStatus, TaskPriority } from '@/types';
+import { assignShift, createShifts, createTasks, deleteShift, deleteTask, listShifts, listTasks, releaseShift } from '@/lib/data';
+import { Shift, TaskPriority } from '@/types';
 import styles from './page.module.css';
 
 interface ShiftTask {
@@ -64,9 +63,7 @@ export default function CalendarPage() {
             try {
                 const firstDay = new Date(year, month, 1).toISOString().split('T')[0];
                 const lastDay = new Date(year, month + 1, 0).toISOString().split('T')[0];
-                const shiftsQuery = query(collection(db, 'shifts'), where('date', '>=', firstDay), where('date', '<=', lastDay));
-                const shiftsSnap = await getDocs(shiftsQuery);
-                setShifts(shiftsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Shift[]);
+                setShifts(await listShifts({ from: firstDay, to: lastDay }));
             } catch (error) {
                 console.error('Error fetching shifts:', error);
             } finally {
@@ -84,14 +81,13 @@ export default function CalendarPage() {
             if (dayShifts.length === 0) return;
 
             const newTasksMap: Record<string, any[]> = {};
-            for (const shift of dayShifts) {
-                try {
-                    const tasksQuery = query(collection(db, 'tasks'), where('shiftId', '==', shift.id));
-                    const tasksSnap = await getDocs(tasksQuery);
-                    newTasksMap[shift.id] = tasksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                } catch (error) {
-                    console.error('Error fetching tasks for shift:', error);
+            try {
+                const tasks = await listTasks({ shiftIds: dayShifts.map(s => s.id) });
+                for (const shift of dayShifts) {
+                    newTasksMap[shift.id] = tasks.filter(t => t.shiftId === shift.id);
                 }
+            } catch (error) {
+                console.error('Error fetching tasks for shift:', error);
             }
             setShiftTasksMap(newTasksMap);
         };
@@ -193,48 +189,29 @@ export default function CalendarPage() {
 
         try {
             // Create shifts and collect their IDs
-            const shiftPromises = Array.from(selectedDays).map(date =>
-                addDoc(collection(db, 'shifts'), {
+            const createdShiftIds = await createShifts(
+                Array.from(selectedDays).map(date => ({
                     date,
                     startTime,
                     endTime,
                     position: customShift.position,
                     notes: customShift.notes,
-                    status: 'open' as ShiftStatus,
-                    createdBy: userProfile.uid,
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp(),
-                })
+                })),
+                userProfile.uid
             );
-            const createdShifts = await Promise.all(shiftPromises);
 
             // Create tasks for each shift if any tasks were added
             if (shiftTasks.length > 0) {
-                const taskPromises: Promise<any>[] = [];
-                for (const shiftRef of createdShifts) {
-                    for (const task of shiftTasks) {
-                        taskPromises.push(
-                            addDoc(collection(db, 'tasks'), {
-                                title: task.title,
-                                priority: task.priority,
-                                status: 'pending',
-                                shiftId: shiftRef.id,
-                                createdBy: userProfile.uid,
-                                createdAt: serverTimestamp(),
-                                updatedAt: serverTimestamp(),
-                            })
-                        );
-                    }
-                }
-                await Promise.all(taskPromises);
+                await createTasks(
+                    createdShiftIds.flatMap(shiftId => shiftTasks.map(task => ({ title: task.title, priority: task.priority, shiftId }))),
+                    userProfile.uid
+                );
             }
 
             // Refresh shifts
             const firstDay = new Date(year, month, 1).toISOString().split('T')[0];
             const lastDay = new Date(year, month + 1, 0).toISOString().split('T')[0];
-            const shiftsQuery = query(collection(db, 'shifts'), where('date', '>=', firstDay), where('date', '<=', lastDay));
-            const shiftsSnap = await getDocs(shiftsQuery);
-            setShifts(shiftsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Shift[]);
+            setShifts(await listShifts({ from: firstDay, to: lastDay }));
 
             setShowCreateModal(false);
             setSelectedDays(new Set());
@@ -252,22 +229,13 @@ export default function CalendarPage() {
         if (!userProfile || !existingShiftTask.title.trim()) return;
         setSubmitting(true);
         try {
-            await addDoc(collection(db, 'tasks'), {
-                title: existingShiftTask.title.trim(),
-                priority: existingShiftTask.priority,
-                status: 'pending',
-                shiftId: shiftId,
-                createdBy: userProfile.uid,
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-            });
+            await createTasks([{ title: existingShiftTask.title.trim(), priority: existingShiftTask.priority, shiftId }], userProfile.uid);
 
             // Refresh tasks for this shift
-            const tasksQuery = query(collection(db, 'tasks'), where('shiftId', '==', shiftId));
-            const tasksSnap = await getDocs(tasksQuery);
+            const shiftTasksList = await listTasks({ shiftIds: [shiftId] });
             setShiftTasksMap(prev => ({
                 ...prev,
-                [shiftId]: tasksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+                [shiftId]: shiftTasksList
             }));
 
             setExistingShiftTask({ title: '', priority: 'medium' });
@@ -282,7 +250,7 @@ export default function CalendarPage() {
     const handleDeleteTaskFromShift = async (taskId: string, shiftId: string) => {
         if (!isAdmin) return;
         try {
-            await deleteDoc(doc(db, 'tasks', taskId));
+            await deleteTask(taskId);
             setShiftTasksMap(prev => ({
                 ...prev,
                 [shiftId]: (prev[shiftId] || []).filter(t => t.id !== taskId)
@@ -295,12 +263,7 @@ export default function CalendarPage() {
     const handleTakeShift = async (shift: Shift) => {
         if (!userProfile) return;
         try {
-            await updateDoc(doc(db, 'shifts', shift.id), {
-                status: 'assigned',
-                assignedTo: userProfile.uid,
-                assignedToName: userProfile.displayName,
-                updatedAt: serverTimestamp()
-            });
+            await assignShift(shift.id, userProfile);
             setShifts(prev => prev.map(s => s.id === shift.id ? { ...s, status: 'assigned', assignedTo: userProfile.uid, assignedToName: userProfile.displayName } : s));
         } catch (error) {
             console.error('Error taking shift:', error);
@@ -310,12 +273,7 @@ export default function CalendarPage() {
     const handleReleaseShift = async (shift: Shift) => {
         if (!userProfile) return;
         try {
-            await updateDoc(doc(db, 'shifts', shift.id), {
-                status: 'open',
-                assignedTo: null,
-                assignedToName: null,
-                updatedAt: serverTimestamp()
-            });
+            await releaseShift(shift.id);
             setShifts(prev => prev.map(s => s.id === shift.id ? { ...s, status: 'open', assignedTo: undefined, assignedToName: undefined } : s));
         } catch (error) {
             console.error('Error releasing shift:', error);
@@ -325,7 +283,7 @@ export default function CalendarPage() {
     const handleDeleteShift = async (shift: Shift) => {
         if (!isAdmin || !confirm('Smazat tuto směnu?')) return;
         try {
-            await deleteDoc(doc(db, 'shifts', shift.id));
+            await deleteShift(shift.id);
             setShifts(prev => prev.filter(s => s.id !== shift.id));
         } catch (error) {
             console.error('Error deleting shift:', error);

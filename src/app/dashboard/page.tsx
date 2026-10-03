@@ -2,8 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState } from 'react';
-import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { listAnnouncements, listShifts, listTasks } from '@/lib/data';
 import { Shift, Task, Announcement } from '@/types';
 import Link from 'next/link';
 import styles from './page.module.css';
@@ -22,28 +21,17 @@ export default function DashboardPage() {
                 const today = new Date().toISOString().split('T')[0];
 
                 // Fetch shifts
-                const shiftsQuery = query(
-                    collection(db, 'shifts'),
-                    where('date', '>=', today),
-                    orderBy('date', 'asc'),
-                    limit(5)
-                );
-                const shiftsSnap = await getDocs(shiftsQuery);
-                const shiftsData = shiftsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Shift[];
+                const shiftsData: Shift[] = await listShifts({ from: today, limit: 5 });
                 const filteredShifts = isAdmin ? shiftsData : shiftsData.filter(s => s.assignedTo === userProfile.uid || s.status === 'open');
                 setUpcomingShifts(filteredShifts);
 
                 // Fetch tasks
-                const tasksQuery = query(collection(db, 'tasks'), orderBy('createdAt', 'desc'), limit(5));
-                const tasksSnap = await getDocs(tasksQuery);
-                const tasksData = tasksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Task[];
+                const tasksData: Task[] = await listTasks({ limit: 5 });
                 const filteredTasks = isAdmin ? tasksData : tasksData.filter(t => t.status !== 'completed' && (t.assignedTo === userProfile.uid || !t.assignedTo));
                 setMyTasks(filteredTasks.slice(0, 5));
 
                 // Fetch announcements
-                const announcementsQuery = query(collection(db, 'announcements'), where('isActive', '==', true), orderBy('createdAt', 'desc'), limit(3));
-                const announcementsSnap = await getDocs(announcementsQuery);
-                setAnnouncements(announcementsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Announcement[]);
+                setAnnouncements(await listAnnouncements({ activeOnly: true, limit: 3 }));
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);
             } finally {

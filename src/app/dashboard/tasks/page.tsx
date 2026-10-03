@@ -2,8 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState } from 'react';
-import { collection, query, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { createTasks, deleteTask, listShifts, listTasks, setTaskStatus, updateTask } from '@/lib/data';
 import { Task, TaskPriority, TaskStatus } from '@/types';
 import styles from './page.module.css';
 
@@ -24,40 +23,21 @@ export default function TasksPage() {
         if (!userProfile) return;
 
         try {
-            // Fetch all tasks
-            const tasksQuery = query(collection(db, 'tasks'));
-            const tasksSnap = await getDocs(tasksQuery);
-            const allTasks = tasksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Task[];
+            // All tasks, newest first
+            const allTasks = await listTasks();
 
             if (isAdmin) {
-                // Admin sees all tasks, sorted by date
-                const sorted = allTasks.sort((a, b) => {
-                    const dateA = (a.createdAt as any)?.toDate?.() || new Date(0);
-                    const dateB = (b.createdAt as any)?.toDate?.() || new Date(0);
-                    return dateB.getTime() - dateA.getTime();
-                });
-                setTasks(sorted);
+                // Admin sees all tasks
+                setTasks(allTasks);
             } else {
-                // Employee: fetch their assigned shifts first
-                const shiftsQuery = query(collection(db, 'shifts'));
-                const shiftsSnap = await getDocs(shiftsQuery);
-                const myShiftIds = shiftsSnap.docs
-                    .filter(doc => doc.data().assignedTo === userProfile.uid)
-                    .map(doc => doc.id);
+                // Employee: only tasks from their own shifts
+                const myShiftIds = (await listShifts())
+                    .filter(shift => shift.assignedTo === userProfile.uid)
+                    .map(shift => shift.id);
 
-                // Filter tasks to only those from user's shifts
-                const myTasks = allTasks.filter(task =>
+                setTasks(allTasks.filter(task =>
                     task.shiftId && myShiftIds.includes(task.shiftId)
-                );
-
-                // Sort by date
-                const sorted = myTasks.sort((a, b) => {
-                    const dateA = (a.createdAt as any)?.toDate?.() || new Date(0);
-                    const dateB = (b.createdAt as any)?.toDate?.() || new Date(0);
-                    return dateB.getTime() - dateA.getTime();
-                });
-
-                setTasks(sorted);
+                ));
             }
         } catch (error) { console.error('Error fetching tasks:', error); }
         finally { setLoading(false); }
@@ -78,8 +58,8 @@ export default function TasksPage() {
         if (!userProfile) return;
         setSubmitting(true);
         try {
-            if (editingTask) { await updateDoc(doc(db, 'tasks', editingTask.id), { ...formData, updatedAt: serverTimestamp() }); }
-            else { await addDoc(collection(db, 'tasks'), { ...formData, status: 'pending' as TaskStatus, createdBy: userProfile.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }); }
+            if (editingTask) { await updateTask(editingTask.id, formData); }
+            else { await createTasks([formData], userProfile.uid); }
             handleCloseModal(); fetchTasks();
         } catch (error) { console.error('Error saving task:', error); }
         finally { setSubmitting(false); }
@@ -89,14 +69,14 @@ export default function TasksPage() {
         if (!userProfile) return;
         const newStatus: TaskStatus = task.status === 'completed' ? 'pending' : 'completed';
         try {
-            await updateDoc(doc(db, 'tasks', task.id), { status: newStatus, completedAt: newStatus === 'completed' ? serverTimestamp() : null, completedBy: newStatus === 'completed' ? userProfile.uid : null, updatedAt: serverTimestamp() });
+            await setTaskStatus(task.id, newStatus, userProfile.uid);
             fetchTasks();
         } catch (error) { console.error('Error updating task status:', error); }
     };
 
     const handleDeleteTask = async (task: Task) => {
         if (!isAdmin || !confirm('Opravdu chcete smazat tento úkol?')) return;
-        try { await deleteDoc(doc(db, 'tasks', task.id)); fetchTasks(); }
+        try { await deleteTask(task.id); fetchTasks(); }
         catch (error) { console.error('Error deleting task:', error); }
     };
 

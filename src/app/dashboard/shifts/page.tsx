@@ -2,9 +2,8 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState, useRef } from 'react';
-import { collection, query, where, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { Shift, ShiftStatus, UserProfile } from '@/types';
+import { assignShift, createShifts, deleteShift, listMembers, listShifts, releaseShift, updateShift } from '@/lib/data';
+import { Shift, UserProfile } from '@/types';
 import styles from './page.module.css';
 
 interface ShiftFormData {
@@ -43,9 +42,7 @@ export default function ShiftsPage() {
         try {
             const lastWeek = new Date();
             lastWeek.setDate(lastWeek.getDate() - 7);
-            const shiftsQuery = query(collection(db, 'shifts'), where('date', '>=', lastWeek.toISOString().split('T')[0]), orderBy('date', 'asc'));
-            const shiftsSnap = await getDocs(shiftsQuery);
-            setShifts(shiftsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Shift[]);
+            setShifts(await listShifts({ from: lastWeek.toISOString().split('T')[0] }));
         } catch (error) {
             console.error('Error fetching shifts:', error);
         } finally {
@@ -56,9 +53,7 @@ export default function ShiftsPage() {
     // Fetch employees for admin assign feature
     const fetchEmployees = async () => {
         try {
-            const usersQuery = query(collection(db, 'users'), orderBy('displayName', 'asc'));
-            const usersSnap = await getDocs(usersQuery);
-            setEmployees(usersSnap.docs.filter(d => d.data().isActive !== false).map(doc => ({ ...doc.data(), uid: doc.id })) as UserProfile[]);
+            setEmployees(await listMembers({ activeOnly: true }));
         } catch (error) {
             console.error('Error fetching employees:', error);
         }
@@ -80,12 +75,7 @@ export default function ShiftsPage() {
         if (!selectedEmployee) return;
 
         try {
-            await updateDoc(doc(db, 'shifts', assigningShift.id), {
-                status: 'assigned',
-                assignedTo: selectedEmployee.uid,
-                assignedToName: selectedEmployee.displayName,
-                updatedAt: serverTimestamp()
-            });
+            await assignShift(assigningShift.id, selectedEmployee);
             setShowAssignModal(false);
             setAssigningShift(null);
             fetchShifts();
@@ -198,9 +188,9 @@ export default function ShiftsPage() {
         setSubmitting(true);
         try {
             if (editingShift) {
-                await updateDoc(doc(db, 'shifts', editingShift.id), { ...formData, updatedAt: serverTimestamp() });
+                await updateShift(editingShift.id, formData);
             } else {
-                await addDoc(collection(db, 'shifts'), { ...formData, status: 'open' as ShiftStatus, createdBy: userProfile.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+                await createShifts([formData], userProfile.uid);
             }
             handleCloseModal();
             fetchShifts();
@@ -214,7 +204,7 @@ export default function ShiftsPage() {
     const handleTakeShift = async (shift: Shift) => {
         if (!userProfile) return;
         try {
-            await updateDoc(doc(db, 'shifts', shift.id), { status: 'assigned', assignedTo: userProfile.uid, assignedToName: userProfile.displayName, updatedAt: serverTimestamp() });
+            await assignShift(shift.id, userProfile);
             fetchShifts();
         } catch (error) {
             console.error('Error taking shift:', error);
@@ -224,7 +214,7 @@ export default function ShiftsPage() {
     const handleReleaseShift = async (shift: Shift) => {
         if (!userProfile) return;
         try {
-            await updateDoc(doc(db, 'shifts', shift.id), { status: 'open', assignedTo: null, assignedToName: null, updatedAt: serverTimestamp() });
+            await releaseShift(shift.id);
             fetchShifts();
         } catch (error) {
             console.error('Error releasing shift:', error);
@@ -234,7 +224,7 @@ export default function ShiftsPage() {
     const handleDeleteShift = async (shift: Shift) => {
         if (!canManageShifts || !confirm('Opravdu chcete smazat tuto směnu?')) return;
         try {
-            await deleteDoc(doc(db, 'shifts', shift.id));
+            await deleteShift(shift.id);
             fetchShifts();
         } catch (error) {
             console.error('Error deleting shift:', error);

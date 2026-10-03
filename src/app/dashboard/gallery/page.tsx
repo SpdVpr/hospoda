@@ -2,9 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState, useRef } from 'react';
-import { collection, query, getDocs, addDoc, deleteDoc, doc, serverTimestamp, updateDoc, arrayUnion, arrayRemove, orderBy, limit } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase';
+import { deletePhoto, listPhotos, toggleLike, uploadPhoto } from '@/lib/data';
 import { GalleryPhoto } from '@/types';
 import styles from './page.module.css';
 
@@ -19,9 +17,7 @@ export default function GalleryPage() {
 
     const fetchPhotos = async () => {
         try {
-            const photosQuery = query(collection(db, 'gallery'), orderBy('createdAt', 'desc'), limit(50));
-            const photosSnap = await getDocs(photosQuery);
-            setPhotos(photosSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as GalleryPhoto[]);
+            setPhotos(await listPhotos(50));
         } catch (error) {
             console.error('Error fetching photos:', error);
         } finally {
@@ -101,28 +97,8 @@ export default function GalleryPage() {
             const compressedBlob = await compressImage(file, 1200, 0.8);
             console.log(`Compressed size: ${(compressedBlob.size / 1024 / 1024).toFixed(2)} MB`);
 
-            // Upload to Firebase Storage
-            const timestamp = Date.now();
-            const fileName = `gallery/${userProfile.uid}/${timestamp}.jpg`;
-            const storageRef = ref(storage, fileName);
-
-            // Nahrát komprimovaný blob
-            await uploadBytes(storageRef, compressedBlob, {
-                contentType: 'image/jpeg',
-            });
-            const imageUrl = await getDownloadURL(storageRef);
-
-            // Save to Firestore
-            await addDoc(collection(db, 'gallery'), {
-                imageUrl,
-                storagePath: fileName,
-                caption: caption || '',
-                uploadedBy: userProfile.uid,
-                uploadedByName: userProfile.displayName,
-                uploadedByPhoto: userProfile.photoURL || null,
-                likes: [],
-                createdAt: serverTimestamp(),
-            });
+            // Nahrát komprimovaný blob do úložiště a založit příspěvek
+            await uploadPhoto(compressedBlob, caption, userProfile);
 
             setCaption('');
             if (fileInputRef.current) fileInputRef.current.value = '';
@@ -137,23 +113,9 @@ export default function GalleryPage() {
 
     const handleLike = async (photo: GalleryPhoto) => {
         if (!userProfile) return;
-        const photoRef = doc(db, 'gallery', photo.id);
-        const isLiked = photo.likes?.includes(userProfile.uid);
-
         try {
-            await updateDoc(photoRef, {
-                likes: isLiked ? arrayRemove(userProfile.uid) : arrayUnion(userProfile.uid)
-            });
-            // Optimistic update
-            setPhotos(prev => prev.map(p =>
-                p.id === photo.id
-                    ? {
-                        ...p, likes: isLiked
-                            ? (p.likes || []).filter(id => id !== userProfile.uid)
-                            : [...(p.likes || []), userProfile.uid]
-                    }
-                    : p
-            ));
+            const likes = await toggleLike(photo.id);
+            setPhotos(prev => prev.map(p => p.id === photo.id ? { ...p, likes } : p));
         } catch (error) {
             console.error('Error liking photo:', error);
         }
@@ -166,18 +128,7 @@ export default function GalleryPage() {
         if (!confirm('Opravdu chcete smazat tuto fotku?')) return;
 
         try {
-            // Delete from Storage using storagePath
-            if (photo.storagePath) {
-                try {
-                    const storageRef = ref(storage, photo.storagePath);
-                    await deleteObject(storageRef);
-                } catch (storageError) {
-                    // Image might not exist in storage, continue anyway
-                    console.warn('Could not delete from storage:', storageError);
-                }
-            }
-            // Delete from Firestore
-            await deleteDoc(doc(db, 'gallery', photo.id));
+            await deletePhoto(photo);
             setSelectedPhoto(null);
             fetchPhotos();
         } catch (error) {

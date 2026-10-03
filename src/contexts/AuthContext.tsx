@@ -1,18 +1,9 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import {
-    User,
-    onAuthStateChanged,
-    signInWithEmailAndPassword,
-    createUserWithEmailAndPassword,
-    signInWithPopup,
-    signOut as firebaseSignOut,
-    updateProfile,
-    OAuthProvider,
-} from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db, googleProvider } from '@/lib/firebase';
+import React, { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
+import type { User } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase';
+import { getMyProfile } from '@/lib/data';
 import { UserProfile } from '@/types';
 
 interface AuthContextType {
@@ -21,10 +12,12 @@ interface AuthContextType {
     loading: boolean;
     error: string | null;
     signInWithEmail: (email: string, password: string) => Promise<void>;
-    signUpWithEmail: (email: string, password: string, displayName: string) => Promise<void>;
+    /** Resolves to true when the account still has to be confirmed by e-mail. */
+    signUpWithEmail: (email: string, password: string, displayName: string) => Promise<boolean>;
     signInWithGoogle: () => Promise<void>;
     signInWithApple: () => Promise<void>;
     signOut: () => Promise<void>;
+    refreshProfile: () => Promise<void>;
     isAdmin: boolean;
     isShiftManager: boolean;
     canManageShifts: boolean; // admin OR shift_manager
@@ -38,156 +31,89 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Fetch or create user profile
-    const fetchOrCreateProfile = async (firebaseUser: User): Promise<UserProfile | null> => {
-        try {
-            const profileRef = doc(db, 'users', firebaseUser.uid);
-            const profileSnap = await getDoc(profileRef);
-
-            if (profileSnap.exists()) {
-                return { ...profileSnap.data(), uid: firebaseUser.uid } as UserProfile;
-            }
-
-            // Create new profile for first-time users – always as employee.
-            // Admin role is granted only by another admin (Zaměstnanci page);
-            // firestore.rules reject any other role or extra fields here.
-            // Build profile object — IMPORTANT: exclude undefined values (Firestore rejects them)
-            const newProfile: Record<string, any> = {
-                uid: firebaseUser.uid,
-                email: firebaseUser.email || '',
-                displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Uživatel',
-                role: 'employee',
-                isActive: true,
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-            };
-            // Only include photoURL if it's a real value
-            if (firebaseUser.photoURL) {
-                newProfile.photoURL = firebaseUser.photoURL;
-            }
-
-            // Attempt to create with retry
-            let writeSuccess = false;
-            for (let attempt = 0; attempt < 2; attempt++) {
-                try {
-                    await setDoc(profileRef, newProfile);
-                    writeSuccess = true;
-                    console.log(`✓ Profile created for ${firebaseUser.email || firebaseUser.uid}`);
-                    break;
-                } catch (writeErr) {
-                    console.error(`Profile create attempt ${attempt + 1} failed:`, writeErr);
-                    if (attempt === 0) {
-                        // Wait 1s before retry
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-                    }
-                }
-            }
-
-            if (writeSuccess) {
-                return { ...newProfile, createdAt: new Date(), updatedAt: new Date() } as UserProfile;
-            }
-
-            // Fallback: return a temporary profile from Auth data so UI doesn't break
-            console.warn('Could not create Firestore profile, using fallback from Auth data');
-            return {
-                uid: firebaseUser.uid,
-                email: firebaseUser.email || '',
-                displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Uživatel',
-                role: 'employee',
-                isActive: true,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            } as UserProfile;
-        } catch (err) {
-            console.error('Error fetching/creating profile:', err);
-            // Even on total failure, return fallback so UI shows something useful
-            return {
-                uid: firebaseUser.uid,
-                email: firebaseUser.email || '',
-                displayName: firebaseUser.displayName || 'Uživatel',
-                role: 'employee',
-                isActive: true,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            } as UserProfile;
+    // The member row is created by the database on sign-up (and matched by e-mail
+    // to people migrated from Firebase), so here it is only read.
+    const loadProfile = useCallback(async (u: User | null) => {
+        if (!u) {
+            setUserProfile(null);
+            return;
         }
-    };
-
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            setUser(firebaseUser);
-
-            if (firebaseUser) {
-                const profile = await fetchOrCreateProfile(firebaseUser);
-                setUserProfile(profile);
-            } else {
-                setUserProfile(null);
-            }
-
-            setLoading(false);
-        });
-
-        return () => unsubscribe();
+        try {
+            setUserProfile(await getMyProfile(u.id));
+        } catch (err) {
+            console.error('Error loading profile:', err);
+            setUserProfile(null);
+        }
     }, []);
 
-    const signInWithEmail = async (email: string, password: string) => {
+    useEffect(() => {
+        const supabase = getSupabase();
+        let currentId: string | undefined;
+        const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+            const next = session?.user ?? null;
+            setUser(next);
+            // Token refreshes fire this too – reload the profile only when the account changes.
+            if (next?.id !== currentId) {
+                currentId = next?.id;
+                // Deferred: Supabase calls must not run inside this callback.
+                setTimeout(() => {
+                    loadProfile(next).finally(() => setLoading(false));
+                }, 0);
+            } else {
+                setLoading(false);
+            }
+        });
+        return () => data.subscription.unsubscribe();
+    }, [loadProfile]);
+
+    const run = async <T,>(fallback: string, fn: () => Promise<T>): Promise<T> => {
         try {
             setError(null);
-            await signInWithEmailAndPassword(auth, email, password);
+            return await fn();
         } catch (err) {
-            const message = err instanceof Error ? err.message : 'Chyba při přihlášení';
+            const message = err instanceof Error ? err.message : fallback;
             setError(message);
             throw err;
         }
     };
 
-    const signUpWithEmail = async (email: string, password: string, displayName: string) => {
-        try {
-            setError(null);
-            const result = await createUserWithEmailAndPassword(auth, email, password);
-            await updateProfile(result.user, { displayName });
-        } catch (err) {
-            const message = err instanceof Error ? err.message : 'Chyba při registraci';
-            setError(message);
-            throw err;
-        }
-    };
+    const signInWithEmail = (email: string, password: string) =>
+        run('Chyba při přihlášení', async () => {
+            const { error } = await getSupabase().auth.signInWithPassword({ email, password });
+            if (error) throw error;
+        });
 
-    const signInWithGoogle = async () => {
-        try {
-            setError(null);
-            await signInWithPopup(auth, googleProvider);
-        } catch (err) {
-            const message = err instanceof Error ? err.message : 'Chyba při přihlášení přes Google';
-            setError(message);
-            throw err;
-        }
-    };
+    const signUpWithEmail = (email: string, password: string, displayName: string) =>
+        run('Chyba při registraci', async () => {
+            const { data, error } = await getSupabase().auth.signUp({
+                email,
+                password,
+                options: { data: { display_name: displayName.trim() }, emailRedirectTo: `${window.location.origin}/` },
+            });
+            if (error) throw error;
+            return !data.session;
+        });
 
-    const signInWithApple = async () => {
-        try {
-            setError(null);
-            const appleProvider = new OAuthProvider('apple.com');
-            appleProvider.addScope('email');
-            appleProvider.addScope('name');
-            await signInWithPopup(auth, appleProvider);
-        } catch (err) {
-            const message = err instanceof Error ? err.message : 'Chyba při přihlášení přes Apple';
-            setError(message);
-            throw err;
-        }
-    };
+    const signInWithOAuth = (provider: 'google' | 'apple', fallback: string) =>
+        run(fallback, async () => {
+            const { error } = await getSupabase().auth.signInWithOAuth({
+                provider,
+                options: { redirectTo: `${window.location.origin}/` },
+            });
+            if (error) throw error;
+        });
 
-    const signOut = async () => {
-        try {
-            await firebaseSignOut(auth);
+    const signInWithGoogle = () => signInWithOAuth('google', 'Chyba při přihlášení přes Google');
+    const signInWithApple = () => signInWithOAuth('apple', 'Chyba při přihlášení přes Apple');
+
+    const signOut = () =>
+        run('Chyba při odhlášení', async () => {
+            const { error } = await getSupabase().auth.signOut();
+            if (error) throw error;
             setUserProfile(null);
-        } catch (err) {
-            const message = err instanceof Error ? err.message : 'Chyba při odhlášení';
-            setError(message);
-            throw err;
-        }
-    };
+        });
+
+    const refreshProfile = () => loadProfile(user);
 
     const isAdmin = userProfile?.role === 'admin';
     const isShiftManager = userProfile?.role === 'shift_manager';
@@ -205,6 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 signInWithGoogle,
                 signInWithApple,
                 signOut,
+                refreshProfile,
                 isAdmin,
                 isShiftManager,
                 canManageShifts,

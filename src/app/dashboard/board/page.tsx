@@ -2,8 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState } from 'react';
-import { collection, query, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { createAnnouncement, deleteAnnouncement, listAnnouncements, updateAnnouncement } from '@/lib/data';
 import { Announcement } from '@/types';
 import styles from './page.module.css';
 
@@ -21,22 +20,7 @@ export default function BoardPage() {
 
     const fetchAnnouncements = async () => {
         try {
-            // Simple query without composite index requirement
-            const announcementsQuery = query(collection(db, 'announcements'));
-            const announcementsSnap = await getDocs(announcementsQuery);
-            const allAnnouncements = announcementsSnap.docs
-                .map(doc => ({ id: doc.id, ...doc.data() })) as Announcement[];
-
-            // Filter and sort on client side
-            const filtered = allAnnouncements
-                .filter(a => a.isActive === true)
-                .sort((a, b) => {
-                    const dateA = (a.createdAt as any)?.toDate?.() || new Date(0);
-                    const dateB = (b.createdAt as any)?.toDate?.() || new Date(0);
-                    return dateB.getTime() - dateA.getTime();
-                });
-
-            setAnnouncements(filtered);
+            setAnnouncements(await listAnnouncements({ activeOnly: true }));
         } catch (error) { console.error('Error fetching announcements:', error); }
         finally { setLoading(false); }
     };
@@ -56,8 +40,8 @@ export default function BoardPage() {
         if (!userProfile || !isAdmin) return;
         setSubmitting(true);
         try {
-            if (editingAnnouncement) { await updateDoc(doc(db, 'announcements', editingAnnouncement.id), { ...formData, updatedAt: serverTimestamp() }); }
-            else { await addDoc(collection(db, 'announcements'), { ...formData, isActive: true, createdBy: userProfile.uid, createdByName: userProfile.displayName, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }); }
+            if (editingAnnouncement) { await updateAnnouncement(editingAnnouncement.id, formData); }
+            else { await createAnnouncement(formData, userProfile); }
             handleCloseModal(); fetchAnnouncements();
         } catch (error) { console.error('Error saving announcement:', error); }
         finally { setSubmitting(false); }
@@ -65,7 +49,7 @@ export default function BoardPage() {
 
     const handleDeleteAnnouncement = async (announcement: Announcement) => {
         if (!isAdmin || !confirm('Opravdu chcete smazat toto oznámení?')) return;
-        try { await deleteDoc(doc(db, 'announcements', announcement.id)); fetchAnnouncements(); }
+        try { await deleteAnnouncement(announcement.id); fetchAnnouncements(); }
         catch (error) { console.error('Error deleting announcement:', error); }
     };
 
