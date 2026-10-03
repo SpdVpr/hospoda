@@ -3,7 +3,8 @@
 // DEV ONLY – one-off migration of the staff app data from Firebase to Supabase.
 // 1) sign in to the new app as admin (Supabase), 2) "Převést" exports Firestore
 // (server-side as the old shared admin, or as a manually signed-in Firebase user),
-// imports it (RPC team_import) and copies INSTAVES photos to Supabase Storage.
+// imports it (RPC team_import, also removing rows deleted in Firebase since the last run)
+// and copies INSTAVES photos to Supabase Storage.
 // Remove this page, /api/migrace and src/lib/firebase.ts once the migration is done.
 
 import { useState } from 'react';
@@ -57,29 +58,31 @@ export default function MigrationPage() {
         }
     };
 
-    /** Export as the manually signed-in Firebase user (fallback). */
-    const exportInBrowser = async (): Promise<Export> => {
+    /** Export as the manually signed-in Firebase user (fallback). `complete` = collections read in full. */
+    const exportInBrowser = async (): Promise<{ data: Export; complete: string[] }> => {
         const data: Export = {};
+        const complete: string[] = [];
         for (const name of COLLECTIONS) {
             try {
                 const snap = await getDocs(collection(fbDb, name));
                 data[name] = snap.docs.map((d) => ({ ...(plain(d.data()) as Record<string, unknown>), [name === 'users' ? 'uid' : 'id']: d.id }));
+                complete.push(name);
             } catch (err) {
                 data[name] = [];
                 say(`Firebase ${name}: NELZE PŘEČÍST (${err instanceof Error ? err.message : err})`);
             }
         }
-        return data;
+        return { data, complete };
     };
 
     /** Export on the dev server as the old shared admin account. */
-    const exportOnServer = async (): Promise<Export> => {
+    const exportOnServer = async (): Promise<{ data: Export; complete: string[] }> => {
         const { data: session } = await getSupabase().auth.getSession();
         const res = await fetch('/api/migrace/export', { headers: { Authorization: `Bearer ${session.session?.access_token ?? ''}` } });
         const body = (await res.json()) as { data?: Export; errors?: Record<string, string>; error?: string };
         if (!res.ok || !body.data) throw new Error(body.error ?? `Export selhal (${res.status})`);
         for (const [name, message] of Object.entries(body.errors ?? {})) say(`Firebase ${name}: NELZE PŘEČÍST (${message})`);
-        return body.data;
+        return { data: body.data, complete: COLLECTIONS.filter((name) => !body.errors?.[name]) };
     };
 
     const migrate = async () => {
@@ -88,11 +91,11 @@ export default function MigrationPage() {
         const supabase = getSupabase();
         try {
             // 1) Export
-            const data = fbUser ? await exportInBrowser() : await exportOnServer();
+            const { data, complete } = fbUser ? await exportInBrowser() : await exportOnServer();
             for (const name of COLLECTIONS) say(`Firebase ${name}: ${data[name]?.length ?? 0}`);
 
-            // 2) Import
-            const { data: result, error } = await supabase.rpc('team_import', { p_data: data });
+            // 2) Import (+ removal of rows deleted in Firebase, only for collections read in full)
+            const { data: result, error } = await supabase.rpc('team_import', { p_data: { ...data, complete } });
             if (error) throw new Error(error.message);
             say(`Supabase import: ${JSON.stringify(result)}`);
 
