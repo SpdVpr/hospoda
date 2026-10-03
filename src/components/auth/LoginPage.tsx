@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import styles from './LoginPage.module.css';
 
-type AuthMode = 'login' | 'register';
+type AuthMode = 'login' | 'register' | 'reset';
 
 // Apple sign-in needs an Apple Developer account configured in Supabase Auth.
 const APPLE_LOGIN = process.env.NEXT_PUBLIC_APPLE_LOGIN === '1';
@@ -28,17 +28,28 @@ export default function LoginPage() {
     const [displayName, setDisplayName] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [notice, setNotice] = useState<string | null>(null);
 
-    const { signInWithEmail, signUpWithEmail, signInWithGoogle, signInWithApple } = useAuth();
+    const { signInWithEmail, signUpWithEmail, signInWithGoogle, signInWithApple, sendPasswordReset } = useAuth();
+
+    const switchMode = (next: AuthMode) => {
+        setMode(next);
+        setError(null);
+        setNotice(null);
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+        setNotice(null);
         setIsLoading(true);
 
         try {
             if (mode === 'login') {
                 await signInWithEmail(email, password);
+            } else if (mode === 'reset') {
+                await sendPasswordReset(email);
+                setNotice('Pokud u nás účet s tímto emailem je, poslali jsme na něj odkaz pro nastavení hesla.');
             } else {
                 if (!displayName.trim()) {
                     setError('Vyplňte prosím jméno');
@@ -47,7 +58,7 @@ export default function LoginPage() {
                 }
                 const needsConfirmation = await signUpWithEmail(email, password, displayName);
                 if (needsConfirmation) {
-                    setError('Hotovo! Poslali jsme vám email s odkazem pro potvrzení účtu.');
+                    setNotice('Hotovo! Poslali jsme vám email s odkazem pro potvrzení účtu.');
                 }
             }
         } catch (err) {
@@ -95,16 +106,19 @@ export default function LoginPage() {
                         <img src="/logo-vesnice-main.png" alt="Vesnice" className={styles.logoMain} />
                     </div>
                     <h1 className={styles.title}>
-                        {mode === 'login' ? 'Vítejte zpět!' : 'Vytvořte účet'}
+                        {mode === 'login' ? 'Vítejte zpět!' : mode === 'reset' ? 'Nové heslo' : 'Vytvořte účet'}
                     </h1>
                     <p className={styles.subtitle}>
                         {mode === 'login'
                             ? 'Přihlaste se do docházkového systému'
-                            : 'Zaregistrujte se pro přístup do systému'}
+                            : mode === 'reset'
+                                ? 'Pošleme vám odkaz pro nastavení hesla'
+                                : 'Zaregistrujte se pro přístup do systému'}
                     </p>
                 </div>
 
                 <div className={styles.card}>
+                    {mode !== 'reset' && (<>
                     <div className={styles.socialButtons}>
                         <button
                             className={styles.googleBtn}
@@ -139,6 +153,7 @@ export default function LoginPage() {
                     <div className={styles.divider}>
                         <span>nebo emailem</span>
                     </div>
+                    </>)}
 
                     <form onSubmit={handleSubmit} className={styles.form}>
                         {mode === 'register' && (
@@ -175,6 +190,7 @@ export default function LoginPage() {
                             />
                         </div>
 
+                        {mode !== 'reset' && (
                         <div className={styles.formGroup}>
                             <label htmlFor="password" className={styles.label}>
                                 Heslo
@@ -194,6 +210,12 @@ export default function LoginPage() {
                                 <p className={styles.hint}>Minimálně 6 znaků</p>
                             )}
                         </div>
+                        )}
+                        {mode === 'login' && (
+                            <button type="button" onClick={() => switchMode('reset')} className={styles.toggleBtn} style={{ alignSelf: 'flex-end', fontSize: '0.85rem' }}>
+                                Zapomenuté heslo?
+                            </button>
+                        )}
 
                         {error && (
                             <div className={styles.error}>
@@ -204,6 +226,8 @@ export default function LoginPage() {
                             </div>
                         )}
 
+                        {notice && <div className={styles.notice}>{notice}</div>}
+
                         <button
                             type="submit"
                             className={styles.submitBtn}
@@ -212,7 +236,7 @@ export default function LoginPage() {
                             {isLoading ? (
                                 <span className={styles.spinner}></span>
                             ) : (
-                                mode === 'login' ? 'Přihlásit se' : 'Vytvořit účet'
+                                mode === 'login' ? 'Přihlásit se' : mode === 'reset' ? 'Poslat odkaz' : 'Vytvořit účet'
                             )}
                         </button>
                     </form>
@@ -223,7 +247,7 @@ export default function LoginPage() {
                                 Nemáte účet?{' '}
                                 <button
                                     type="button"
-                                    onClick={() => { setMode('register'); setError(null); }}
+                                    onClick={() => switchMode('register')}
                                     className={styles.toggleBtn}
                                 >
                                     Zaregistrujte se
@@ -234,7 +258,7 @@ export default function LoginPage() {
                                 Máte již účet?{' '}
                                 <button
                                     type="button"
-                                    onClick={() => { setMode('login'); setError(null); }}
+                                    onClick={() => switchMode('login')}
                                     className={styles.toggleBtn}
                                 >
                                     Přihlaste se

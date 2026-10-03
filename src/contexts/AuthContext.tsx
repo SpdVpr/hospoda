@@ -16,6 +16,8 @@ interface AuthContextType {
     signUpWithEmail: (email: string, password: string, displayName: string) => Promise<boolean>;
     signInWithGoogle: () => Promise<void>;
     signInWithApple: () => Promise<void>;
+    /** E-mail with a link to /nove-heslo (forgotten or first password after the move from Firebase). */
+    sendPasswordReset: (email: string) => Promise<void>;
     signOut: () => Promise<void>;
     refreshProfile: () => Promise<void>;
     isAdmin: boolean;
@@ -106,6 +108,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const signInWithGoogle = () => signInWithOAuth('google', 'Chyba při přihlášení přes Google');
     const signInWithApple = () => signInWithOAuth('apple', 'Chyba při přihlášení přes Apple');
 
+    const sendPasswordReset = (email: string) =>
+        run('Chyba při odesílání e-mailu', async () => {
+            const { error } = await getSupabase().auth.resetPasswordForEmail(email, {
+                redirectTo: `${window.location.origin}/nove-heslo`,
+            });
+            if (error) throw error;
+        });
+
     const signOut = () =>
         run('Chyba při odhlášení', async () => {
             const { error } = await getSupabase().auth.signOut();
@@ -130,6 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 signUpWithEmail,
                 signInWithGoogle,
                 signInWithApple,
+                sendPasswordReset,
                 signOut,
                 refreshProfile,
                 isAdmin,
