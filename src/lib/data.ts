@@ -56,22 +56,23 @@ export const toProfile = (r: Row): UserProfile => ({
 /** Profile of the signed-in account plus its effective role (web admins are admins here too). */
 export async function getMyProfile(userId: string): Promise<UserProfile | null> {
     const supabase = getSupabase();
-    const [row, role] = await Promise.all([
-        supabase.from('team_members').select('*').eq('user_id', userId).maybeSingle(),
+    const [row, role, webProfile] = await Promise.all([
+        supabase.rpc('team_directory'),
         supabase.rpc('team_role'),
+        supabase.from('profiles').select('role').eq('id', userId).maybeSingle(),
     ]);
     if (row.error) throw new Error(row.error.message);
-    const data = row.data;
+    const data = (row.data as Row[] | null)?.find(r => r.user_id === userId);
     if (!data) return null;
     const profile = toProfile(data);
     if (role.data) profile.role = role.data as UserRole;
+    if (webProfile.data?.role === 'admin') profile.role = 'admin';
     return profile;
 }
 
 export async function listMembers(opts: { activeOnly?: boolean } = {}): Promise<UserProfile[]> {
-    let q = getSupabase().from('team_members').select('*');
-    if (opts.activeOnly) q = q.eq('is_active', true);
-    const rows = check(await q).map(toProfile);
+    const result = await getSupabase().rpc('team_directory');
+    const rows = (check(result) as Row[]).filter(r => !opts.activeOnly || r.is_active).map(toProfile);
     return rows.sort((a, b) => a.displayName.localeCompare(b.displayName, 'cs'));
 }
 
@@ -297,7 +298,14 @@ const toPhoto = (r: Row): GalleryPhoto => ({
 });
 
 export async function listPhotos(limit = 50): Promise<GalleryPhoto[]> {
-    return check(await getSupabase().from('team_photos').select('*').order('created_at', { ascending: false }).limit(limit)).map(toPhoto);
+    const supabase = getSupabase();
+    const rows = check(await supabase.from('team_photos').select('*').order('created_at', { ascending: false }).limit(limit)) as Row[];
+    return Promise.all(rows.map(async row => {
+        const path = row.storage_path || (typeof row.image_url === 'string' && row.image_url.includes('/storage/v1/object/public/instaves/') ? decodeURIComponent(row.image_url.split('/storage/v1/object/public/instaves/')[1].split('?')[0]) : null);
+        if (!path) return toPhoto({ ...row, image_url: '' });
+        const signed = check(await supabase.storage.from(BUCKET).createSignedUrl(path, 3600));
+        return toPhoto({ ...row, image_url: signed.signedUrl });
+    }));
 }
 
 /** Uploads a JPEG into the member's own folder and creates the post. */

@@ -9,14 +9,12 @@ const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 'sb_pub
 let client: SupabaseClient | null = null;
 
 /**
- * Browser client. On *.hospodavesnice.cz the session cookie is shared with the
- * website admin (www.hospodavesnice.cz/admin), so one login works for both.
+ * Browser client with host-only cookies. Both apps share accounts, not tokens.
  */
 export function getSupabase(): SupabaseClient {
     if (!client) {
-        const host = typeof window !== 'undefined' ? window.location.hostname : '';
         client = createBrowserClient(SUPABASE_URL, SUPABASE_KEY, {
-            cookieOptions: host.endsWith('hospodavesnice.cz') ? { domain: '.hospodavesnice.cz' } : undefined,
+            cookieOptions: { secure: typeof window !== 'undefined' && window.location.protocol === 'https:', sameSite: 'lax' },
         });
     }
     return client;

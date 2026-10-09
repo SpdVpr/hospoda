@@ -13,6 +13,7 @@ const APPLE_LOGIN = process.env.NEXT_PUBLIC_APPLE_LOGIN === '1';
 function authMessage(message: string): string {
     if (/invalid login credentials/i.test(message)) return 'Nesprávný email nebo heslo';
     if (/email not confirmed/i.test(message)) return 'Email ještě není potvrzený – klikněte na odkaz, který jsme vám poslali.';
+    if (/database error saving new user|invitation_required/i.test(message)) return 'Tento e-mail nemá pozvánku. Použijte stejný e-mail jako dříve nebo kontaktujte správce.';
     if (/already registered|already exists/i.test(message)) return 'Email je již registrován';
     if (/password should be|weak password/i.test(message)) return 'Heslo musí mít alespoň 6 znaků';
     if (/invalid.*email|unable to validate email/i.test(message)) return 'Neplatný formát emailu';
@@ -113,10 +114,11 @@ export default function LoginPage() {
                             ? 'Přihlaste se do docházkového systému'
                             : mode === 'reset'
                                 ? 'Pošleme vám odkaz pro nastavení hesla'
-                                : 'Zaregistrujte se pro přístup do systému'}
+                                : 'První přihlášení je jen pro pozvané členy týmu'}
                     </p>
                 </div>
 
+                {mode === 'login' && <p className={styles.subtitle}>Použijte stejný e-mail jako dříve. Přihlášení přes Google zůstává stejné. Pokud jste používali původní heslo, zvolte nejprve „První přihlášení“ a nastavte si nové.</p>}
                 <div className={styles.card}>
                     {mode !== 'reset' && (<>
                     <div className={styles.socialButtons}>
@@ -250,7 +252,7 @@ export default function LoginPage() {
                                     onClick={() => switchMode('register')}
                                     className={styles.toggleBtn}
                                 >
-                                    Zaregistrujte se
+                                    První přihlášení
                                 </button>
                             </>
                         ) : (

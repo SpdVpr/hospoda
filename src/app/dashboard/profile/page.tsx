@@ -30,7 +30,7 @@ export default function ProfilePage() {
     };
 
     const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-    const formatDate = (timestamp: any) => { if (!timestamp) return 'Neznámé'; const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp); return date.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' }); };
+    const formatDate = (timestamp?: Date) => { if (!timestamp) return 'Neznámé'; const date = timestamp; return date.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' }); };
 
     return (
         <div className={styles.container}>

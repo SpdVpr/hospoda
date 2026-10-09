@@ -103,9 +103,9 @@ export default function GalleryPage() {
             setCaption('');
             if (fileInputRef.current) fileInputRef.current.value = '';
             fetchPhotos();
-        } catch (error: any) {
+        } catch (error) {
             console.error('Error uploading photo:', error);
-            alert(`Nahrávání selhalo: ${error.message || 'Neznámá chyba'}. Zkuste to prosím znovu.`);
+            alert(`Nahrávání selhalo: ${error instanceof Error ? error.message : 'Neznámá chyba'}. Zkuste to prosím znovu.`);
         } finally {
             setUploading(false);
         }
@@ -136,9 +136,9 @@ export default function GalleryPage() {
         }
     };
 
-    const formatDate = (timestamp: any) => {
+    const formatDate = (timestamp?: Date) => {
         if (!timestamp) return '';
-        const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+        const date = timestamp;
         const now = new Date();
         const diff = now.getTime() - date.getTime();
         const hours = Math.floor(diff / (1000 * 60 * 60));
@@ -205,7 +205,7 @@ export default function GalleryPage() {
                             className={styles.photoCard}
                             onClick={() => setSelectedPhoto(photo)}
                         >
-                            <img src={photo.imageUrl} alt={photo.caption || 'INSTAVES'} className={styles.photoImg} />
+                            {photo.imageUrl ? <img src={photo.imageUrl} alt={photo.caption || 'INSTAVES'} className={styles.photoImg} /> : <p style={{ padding: '2rem' }}>Původní fotografie není dostupná. Správce ji může znovu nahrát.</p>}
                             <div className={styles.photoOverlay}>
                                 <span className={styles.likeCount}>{photo.likes?.length || 0}</span>
                             </div>
@@ -220,7 +220,7 @@ export default function GalleryPage() {
                     <div className={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
                         <button className={styles.closeBtn} onClick={() => setSelectedPhoto(null)}>×</button>
 
-                        <img src={selectedPhoto.imageUrl} alt={selectedPhoto.caption || 'INSTAVES'} className={styles.lightboxImg} />
+                        {selectedPhoto.imageUrl ? <img src={selectedPhoto.imageUrl} alt={selectedPhoto.caption || 'INSTAVES'} className={styles.lightboxImg} /> : <p>Původní fotografie není dostupná. Správce ji může znovu nahrát.</p>}
 
                         <div className={styles.lightboxInfo}>
                             <div className={styles.lightboxAuthor}>

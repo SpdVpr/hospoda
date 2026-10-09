@@ -9,6 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  robots: { index: false, follow: false },
   title: "Vesnice - Docházkový systém",
   description: "Moderní docházkový systém pro hospody a restaurace. Plánování směn, úkoly a správa zaměstnanců.",
   icons: {

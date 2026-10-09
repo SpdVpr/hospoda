@@ -20,6 +20,7 @@ interface AuthContextType {
     sendPasswordReset: (email: string) => Promise<void>;
     signOut: () => Promise<void>;
     refreshProfile: () => Promise<void>;
+    needsMfa: boolean;
     isAdmin: boolean;
     isShiftManager: boolean;
     canManageShifts: boolean; // admin OR shift_manager
@@ -32,6 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [needsMfa, setNeedsMfa] = useState(false);
 
     // The member row is created by the database on sign-up (and matched by e-mail
     // to people migrated from Firebase), so here it is only read.
@@ -41,7 +43,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return;
         }
         try {
-            setUserProfile(await getMyProfile(u.id));
+            const profile = await getMyProfile(u.id);
+            const { data: assurance } = await getSupabase().auth.mfa.getAuthenticatorAssuranceLevel();
+            setNeedsMfa(profile?.role === 'admin' && assurance?.currentLevel !== 'aal2');
+            setUserProfile(profile);
         } catch (err) {
             console.error('Error loading profile:', err);
             setUserProfile(null);
@@ -55,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const next = session?.user ?? null;
             setUser(next);
             // Token refreshes fire this too – reload the profile only when the account changes.
-            if (next?.id !== currentId) {
+            if (next?.id !== currentId || _event === 'MFA_CHALLENGE_VERIFIED' || _event === 'TOKEN_REFRESHED') {
                 currentId = next?.id;
                 // Deferred: Supabase calls must not run inside this callback.
                 setTimeout(() => {
@@ -125,7 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const refreshProfile = () => loadProfile(user);
 
-    const isAdmin = userProfile?.role === 'admin';
+    const isAdmin = !needsMfa && userProfile?.role === 'admin';
     const isShiftManager = userProfile?.role === 'shift_manager';
     const canManageShifts = isAdmin || isShiftManager;
 
@@ -143,6 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 sendPasswordReset,
                 signOut,
                 refreshProfile,
+                needsMfa,
                 isAdmin,
                 isShiftManager,
                 canManageShifts,

@@ -3,7 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState, useRef } from 'react';
 import { assignShift, createShifts, createTasks, deleteShift, deleteTask, listShifts, listTasks, releaseShift } from '@/lib/data';
-import { Shift, TaskPriority } from '@/types';
+import { Shift, Task, TaskPriority } from '@/types';
 import styles from './page.module.css';
 
 interface ShiftTask {
@@ -51,7 +51,7 @@ export default function CalendarPage() {
     // For adding task to existing shift
     const [addTaskToShiftId, setAddTaskToShiftId] = useState<string | null>(null);
     const [existingShiftTask, setExistingShiftTask] = useState({ title: '', priority: 'medium' as TaskPriority });
-    const [shiftTasksMap, setShiftTasksMap] = useState<Record<string, any[]>>({});
+    const [shiftTasksMap, setShiftTasksMap] = useState<Record<string, Task[]>>({});
     const dayDetailRef = useRef<HTMLDivElement>(null);
 
     const year = currentDate.getFullYear();
@@ -80,7 +80,7 @@ export default function CalendarPage() {
             const dayShifts = shifts.filter(s => s.date === selectedDayForDetail);
             if (dayShifts.length === 0) return;
 
-            const newTasksMap: Record<string, any[]> = {};
+            const newTasksMap: Record<string, Task[]> = {};
             try {
                 const tasks = await listTasks({ shiftIds: dayShifts.map(s => s.id) });
                 for (const shift of dayShifts) {
@@ -434,7 +434,7 @@ export default function CalendarPage() {
                                             {shiftTasksList.length > 0 && (
                                                 <div className={styles.shiftTasksSection}>
                                                     <div className={styles.shiftTasksTitle}>Úkoly ({shiftTasksList.length})</div>
-                                                    {shiftTasksList.map((task: any) => (
+                                                    {shiftTasksList.map((task: Task) => (
                                                         <div key={task.id} className={styles.shiftTaskItem}>
                                                             <span className={styles.taskPriorityIcon}>
                                                                 {task.priority === 'high' ? '🔴' : task.priority === 'medium' ? '🟡' : '🟢'}

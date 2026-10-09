@@ -56,9 +56,9 @@ export default function BoardPage() {
     const getPriorityIcon = (priority: string) => priority === 'urgent' ? '🚨' : priority === 'important' ? '⚠️' : '📌';
     const getPriorityLabel = (priority: string) => priority === 'urgent' ? 'Urgentní' : priority === 'important' ? 'Důležité' : 'Běžné';
 
-    const formatDate = (timestamp: any) => {
+    const formatDate = (timestamp?: Date) => {
         if (!timestamp) return '';
-        const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+        const date = timestamp;
         const now = new Date();
         const diff = now.getTime() - date.getTime();
         const days = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -100,7 +100,7 @@ export default function BoardPage() {
                         <form onSubmit={handleSubmit} className={styles.form}>
                             <div className={styles.formGroup}><label htmlFor="title">Nadpis</label><input type="text" id="title" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="Nadpis oznámení" required /></div>
                             <div className={styles.formGroup}><label htmlFor="content">Obsah</label><textarea id="content" value={formData.content} onChange={(e) => setFormData({ ...formData, content: e.target.value })} placeholder="Text oznámení..." rows={5} required /></div>
-                            <div className={styles.formGroup}><label htmlFor="priority">Priorita</label><select id="priority" value={formData.priority} onChange={(e) => setFormData({ ...formData, priority: e.target.value as any })}><option value="normal">📌 Běžné</option><option value="important">⚠️ Důležité</option><option value="urgent">🚨 Urgentní</option></select></div>
+                            <div className={styles.formGroup}><label htmlFor="priority">Priorita</label><select id="priority" value={formData.priority} onChange={(e) => setFormData({ ...formData, priority: e.target.value as Announcement['priority'] })}><option value="normal">📌 Běžné</option><option value="important">⚠️ Důležité</option><option value="urgent">🚨 Urgentní</option></select></div>
                             <div className={styles.modalFooter}><button type="button" className={styles.cancelBtn} onClick={handleCloseModal}>Zrušit</button><button type="submit" className={styles.submitBtn} disabled={submitting}>{submitting ? 'Ukládám...' : (editingAnnouncement ? 'Uložit' : 'Publikovat')}</button></div>
                         </form>
                     </div>
