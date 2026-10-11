@@ -27,7 +27,7 @@ const navItems: NavItem[] = [
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-    const { user, userProfile, loading, signOut, needsMfa, isAdmin, isShiftManager, canManageShifts } = useAuth();
+    const { user, userProfile, loading, signOut, isAdmin, isShiftManager } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -45,7 +45,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         return <LoadingScreen />;
     }
 
-    if (needsMfa) return <main style={{ padding: '3rem', textAlign: 'center' }}><h1>Ověření přihlášení</h1><p>Pro přístup správce je nutný kód z ověřovací aplikace.</p><Link href="/overeni">Pokračovat k ověření</Link><p><button onClick={() => signOut()}>Odhlásit se</button></p></main>;
     if (!userProfile?.isActive) return <main style={{ padding: '3rem', textAlign: 'center' }}><h1>Přístup není schválený</h1><p>Požádejte správce o pozvánku nebo aktivaci účtu.</p><button onClick={() => signOut()}>Odhlásit se</button></main>;
 
     const filteredNavItems = navItems.filter(item => !item.adminOnly || isAdmin);
