@@ -11,6 +11,7 @@ export default function VerificationPage() {
   const router = useRouter();
   const [factorId, setFactorId] = useState('');
   const [qr, setQr] = useState('');
+  const [secret, setSecret] = useState('');
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
@@ -26,24 +27,35 @@ export default function VerificationPage() {
       for (const f of factors.data.all.filter(f => f.factor_type === 'totp' && f.status === 'unverified')) await client.auth.mfa.unenroll({ factorId: f.id });
       const enrolled = await client.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'Vesnice – ověřovací aplikace', issuer: 'Hospoda Vesnice' });
       if (enrolled.error) throw enrolled.error;
-      setFactorId(enrolled.data.id); setQr(enrolled.data.totp.qr_code);
+      setFactorId(enrolled.data.id); setQr(enrolled.data.totp.qr_code); setSecret(enrolled.data.totp.secret);
     } catch { setError('Ověření se nepodařilo zahájit. Zkuste to znovu.'); }
     finally { setPending(false); }
   }
 
   async function verify(event: React.FormEvent) {
     event.preventDefault(); setPending(true); setError('');
-    const { error } = await getSupabase().auth.mfa.challengeAndVerify({ factorId, code });
-    if (error) { setError('Kód není platný nebo vypršel. Zkuste nový kód.'); setPending(false); return; }
-    await refreshProfile(); router.replace('/dashboard');
+    try {
+      const { error } = await getSupabase().auth.mfa.challengeAndVerify({ factorId, code });
+      if (error) { setError('Kód není platný nebo vypršel. Použijte aktuální kód z ověřovací aplikace.'); return; }
+      await refreshProfile(); router.replace('/dashboard');
+    } catch { setError('Ověření se nepodařilo dokončit. Zkuste to znovu.'); }
+    finally { setPending(false); }
   }
 
   if (!user) return <main style={{ padding: '3rem' }}><Link href="/">Nejprve se přihlaste</Link></main>;
   return <main style={{ maxWidth: 480, margin: '3rem auto', padding: '2rem' }}>
     <h1>Dvoufaktorové ověření</h1>
-    <p>Přístup správce chrání kód z ověřovací aplikace.</p>
-    {!factorId && <button disabled={pending} onClick={start}>{pending ? 'Načítám…' : 'Pokračovat'}</button>}
-    {qr && <img src={qr} width={240} height={240} alt="QR kód pro nastavení ověřovací aplikace" />}
+    <p>Správce se přihlašuje také šestimístným kódem z ověřovací aplikace v telefonu, například Google Authenticator. Kód neposíláme e-mailem ani SMS.</p>
+    {!factorId && <>
+      <p>Pokud ověřovací aplikaci ještě nemáte nastavenou, po kliknutí se zobrazí QR kód pro její připojení. Pokud už jste ji nastavili v administraci webu, použijete stejný účet Hospoda Vesnice.</p>
+      <button disabled={pending} onClick={start}>{pending ? 'Načítám…' : 'Nastavit nebo otevřít ověření'}</button>
+    </>}
+    {qr && <>
+      <p>V ověřovací aplikaci přidejte účet naskenováním QR kódu. Pak zadejte kód z aplikace do pole níže.</p>
+      {/* eslint-disable-next-line @next/next/no-img-element -- private enrollment QR must not be proxied or cached */}
+      <img src={qr} width={240} height={240} alt="QR kód pro nastavení ověřovací aplikace" />
+      <details><summary>Ruční zadání na stejném telefonu</summary><p>Přidejte účet Hospoda Vesnice, zvolte časový kód a zadejte tento klíč:</p><code style={{ overflowWrap: 'anywhere' }}>{secret}</code></details>
+    </>}
     {factorId && <form onSubmit={verify} style={{ display: 'grid', gap: 16, marginTop: 24 }}>
       <label>Ověřovací kód <input value={code} onChange={event => setCode(event.target.value)} inputMode="numeric" autoComplete="one-time-code" maxLength={6} pattern="[0-9]{6}" required /></label>
       <button disabled={pending}>{pending ? 'Ověřuji…' : 'Ověřit a pokračovat'}</button>

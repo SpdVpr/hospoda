@@ -5,6 +5,7 @@ import type { User } from '@supabase/supabase-js';
 import { getSupabase } from '@/lib/supabase';
 import { getMyProfile } from '@/lib/data';
 import { UserProfile } from '@/types';
+import { authCallbackUrl } from '@/lib/auth-redirect';
 
 interface AuthContextType {
     user: User | null;
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const loadProfile = useCallback(async (u: User | null) => {
         if (!u) {
             setUserProfile(null);
+            setNeedsMfa(false);
             return;
         }
         try {
@@ -95,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const { data, error } = await getSupabase().auth.signUp({
                 email,
                 password,
-                options: { data: { display_name: displayName.trim() }, emailRedirectTo: `${window.location.origin}/` },
+                options: { data: { display_name: displayName.trim() }, emailRedirectTo: authCallbackUrl(window.location.origin) },
             });
             if (error) throw error;
             return !data.session;
@@ -105,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         run(fallback, async () => {
             const { error } = await getSupabase().auth.signInWithOAuth({
                 provider,
-                options: { redirectTo: `${window.location.origin}/` },
+                options: { redirectTo: authCallbackUrl(window.location.origin) },
             });
             if (error) throw error;
         });
@@ -116,7 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const sendPasswordReset = (email: string) =>
         run('Chyba při odesílání e-mailu', async () => {
             const { error } = await getSupabase().auth.resetPasswordForEmail(email, {
-                redirectTo: `${window.location.origin}/nove-heslo`,
+                redirectTo: authCallbackUrl(window.location.origin, '/nove-heslo'),
             });
             if (error) throw error;
         });

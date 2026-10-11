@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import styles from './LoginPage.module.css';
 
@@ -32,6 +32,17 @@ export default function LoginPage() {
     const [notice, setNotice] = useState<string | null>(null);
 
     const { signInWithEmail, signUpWithEmail, signInWithGoogle, signInWithApple, sendPasswordReset } = useAuth();
+
+    useEffect(() => {
+        const showCallbackError = () => {
+            const params = new URLSearchParams(window.location.search);
+            const hash = new URLSearchParams(window.location.hash.slice(1));
+            if (params.get('chyba') === 'odkaz' || hash.has('error')) {
+                setError('Přihlašovací odkaz už neplatí nebo chybí údaje původního prohlížeče. Přihlaste se znovu, případně si vyžádejte nový odkaz a otevřete ho ve stejném prohlížeči.');
+            }
+        };
+        showCallbackError();
+    }, []);
 
     const switchMode = (next: AuthMode) => {
         setMode(next);
@@ -119,6 +130,10 @@ export default function LoginPage() {
                 </div>
 
                 {mode === 'login' && <p className={styles.subtitle}>Použijte stejný e-mail jako dříve. Přihlášení přes Google zůstává stejné. Pokud jste používali původní heslo, zvolte nejprve „První přihlášení“ a nastavte si nové.</p>}
+                {mode === 'login' && !APPLE_LOGIN && <div className={styles.notice}>
+                    <strong>Přihlašovali jste se přes Apple?</strong>
+                    <p>Apple přihlášení zatím není dostupné. Zvolte <button type="button" className={styles.toggleBtn} onClick={() => switchMode('register')}>První přihlášení</button> a použijte svůj původní e-mail (například iCloud). Nastavíte si heslo a potvrdíte e-mail; vaše směny zůstanou u stejného profilu. Pokud vám Apple e-mail skryl, požádejte správce o pomoc s přiřazením účtu.</p>
+                </div>}
                 <div className={styles.card}>
                     {mode !== 'reset' && (<>
                     <div className={styles.socialButtons}>

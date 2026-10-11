@@ -4,6 +4,14 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
   poweredByHeader: false,
+  async redirects() {
+    return ['hospoda.vercel.app', 'hospoda-spdvprs-projects.vercel.app'].map(host => ({
+      source: '/:path*',
+      has: [{ type: 'host' as const, value: host }],
+      destination: 'https://team.hospodavesnice.cz/:path*',
+      permanent: true,
+    }));
+  },
   async headers() {
     const development = process.env.NODE_ENV === 'development';
     return [{ source: '/:path*', headers: [
