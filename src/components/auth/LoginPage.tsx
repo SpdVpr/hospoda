@@ -6,8 +6,8 @@ import styles from './LoginPage.module.css';
 
 type AuthMode = 'login' | 'register' | 'reset';
 
-// Apple sign-in needs an Apple Developer account configured in Supabase Auth.
-const APPLE_LOGIN = process.env.NEXT_PUBLIC_APPLE_LOGIN === '1';
+// Both applications use the same Apple Service ID in Supabase. An explicit 0 hides it for maintenance.
+const APPLE_LOGIN = process.env.NEXT_PUBLIC_APPLE_LOGIN !== '0';
 
 /** Supabase Auth error → Czech message. */
 function authMessage(message: string): string {
@@ -129,7 +129,7 @@ export default function LoginPage() {
                     </p>
                 </div>
 
-                {mode === 'login' && <p className={styles.subtitle}>Použijte stejný e-mail jako dříve. Přihlášení přes Google zůstává stejné. Pokud jste používali původní heslo, zvolte nejprve „První přihlášení“ a nastavte si nové.</p>}
+                {mode === 'login' && <p className={styles.subtitle}>Použijte stejný účet Apple nebo Google jako dříve. Pokud se přihlašujete e-mailem a původním heslem, zvolte nejprve „První přihlášení“ a nastavte si nové.</p>}
                 {mode === 'login' && !APPLE_LOGIN && <div className={styles.notice}>
                     <strong>Přihlašovali jste se přes Apple?</strong>
                     <p>Apple přihlášení zatím není dostupné. Zvolte <button type="button" className={styles.toggleBtn} onClick={() => switchMode('register')}>První přihlášení</button> a použijte svůj původní e-mail (například iCloud). Nastavíte si heslo a potvrdíte e-mail; vaše směny zůstanou u stejného profilu. Pokud vám Apple e-mail skryl, požádejte správce o pomoc s přiřazením účtu.</p>
